@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "Wishpool Capture",
+  "description": "Captura o link da aba atual e salva no Wishpool.",
+  "version": "0.1.0",
+  "action": {
+    "default_title": "Salvar no Wishpool",
+    "default_popup": "popup.html"
+  },
+  "permissions": ["activeTab", "tabs", "storage", "identity"],
+  "host_permissions": [
+    "http://localhost:5173/*",
+    "http://127.0.0.1:5173/*",
+    "http://localhost:4173/*",
+    "http://127.0.0.1:4173/*",
+    "https://okpxxpjskegpohowqqry.supabase.co/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "http://localhost:5173/*",
+        "http://127.0.0.1:5173/*",
+        "http://localhost:4173/*",
+        "http://127.0.0.1:4173/*"
+      ],
+      "js": ["sync-app.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
