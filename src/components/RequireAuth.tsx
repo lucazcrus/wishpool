@@ -1,6 +1,5 @@
 import type { PropsWithChildren } from 'react'
 import { useAuth } from '@/lib/auth'
-import { AuthScreen } from './AuthScreen'
 import { SupabaseConfigErrorScreen } from './SupabaseConfigErrorScreen'
 
 export function RequireAuth({ children }: PropsWithChildren) {
@@ -19,7 +18,8 @@ export function RequireAuth({ children }: PropsWithChildren) {
   }
 
   if (!user) {
-    return <AuthScreen />
+    window.location.replace('/landing.html')
+    return null
   }
 
   return <>{children}</>

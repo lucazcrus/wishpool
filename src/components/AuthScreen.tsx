@@ -33,8 +33,12 @@ export function AuthScreen() {
         if (!fullName) {
           throw new Error('Preencha seu nome para criar a conta.')
         }
-        await signUpWithPassword(email, password, fullName)
-        setMessage('Conta criada. Verifique seu email para confirmar o cadastro, se necessário.')
+        const result = await signUpWithPassword(email, password, fullName)
+        setMessage(
+          result.requiresEmailConfirmation
+            ? 'Conta criada. Enviamos um email de confirmação.'
+            : 'Conta criada e autenticada com sucesso.',
+        )
       } else {
         await signInWithPassword(email, password)
       }

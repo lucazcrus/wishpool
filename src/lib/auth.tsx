@@ -12,7 +12,11 @@ interface AuthContextValue {
   configError: string | null
   signOut: () => Promise<void>
   signInWithPassword: (email: string, password: string) => Promise<void>
-  signUpWithPassword: (email: string, password: string, fullName: string) => Promise<void>
+  signUpWithPassword: (
+    email: string,
+    password: string,
+    fullName: string,
+  ) => Promise<{ requiresEmailConfirmation: boolean }>
   signInWithOAuth: (provider: Provider) => Promise<void>
   syncProfile: (profile: Profile) => Promise<void>
 }
@@ -104,7 +108,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const signUpWithPassword = useCallback(
     async (email: string, password: string, fullName: string) => {
       if (!supabase) throw new Error(supabaseConfigError || 'Supabase client not configured')
-      const { error } = await supabase.auth.signUp({
+      const redirectTo = `${window.location.origin}${window.location.pathname}`
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -112,10 +117,27 @@ export function AuthProvider({ children }: PropsWithChildren) {
             full_name: fullName,
             name: fullName,
           },
-          emailRedirectTo: `${window.location.origin}${window.location.pathname}`,
+          emailRedirectTo: redirectTo,
         },
       })
       if (error) throw error
+
+      const requiresEmailConfirmation = !data.session
+      if (requiresEmailConfirmation) {
+        const { error: resendError } = await supabase.auth.resend({
+          type: 'signup',
+          email,
+          options: {
+            emailRedirectTo: redirectTo,
+          },
+        })
+
+        if (resendError) {
+          console.error('Failed to resend signup confirmation email', resendError)
+        }
+      }
+
+      return { requiresEmailConfirmation }
     },
     [],
   )

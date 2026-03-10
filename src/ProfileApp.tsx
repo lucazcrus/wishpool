@@ -69,6 +69,10 @@ function CategoryEditModal({
   )
 }
 
+function isReservedCategory(name: string) {
+  return name.trim().toLowerCase() === 'todos'
+}
+
 export default function ProfileApp() {
   const { signOut, syncProfile } = useAuth()
   const user = useRequiredUser()
@@ -98,14 +102,21 @@ export default function ProfileApp() {
   function handleAddCategory(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const name = newCategory.trim()
-    if (!name || categories.includes(name)) return
+    if (!name || categories.includes(name) || isReservedCategory(name)) return
     setCategories([...categories, name])
     setNewCategory('')
   }
 
   function handleCategoryRename(idx: number, nextName: string) {
     const prevName = categories[idx]
-    if (!prevName || prevName === nextName || categories.includes(nextName)) return
+    if (
+      !prevName ||
+      prevName === nextName ||
+      categories.includes(nextName) ||
+      isReservedCategory(nextName)
+    ) {
+      return
+    }
     const nextCategories = [...categories]
     nextCategories[idx] = nextName
     const nextItems = items.map((item) =>
