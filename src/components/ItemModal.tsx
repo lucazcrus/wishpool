@@ -102,8 +102,8 @@ export function ItemModal({ mode, item, url = '', categories, onSave, onClose }:
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-135 p-0 overflow-hidden">
-        <div className="p-4">
+      <DialogContent className="max-w-135 p-0">
+        <div className="p-4 overflow-y-auto max-h-[90vh]">
           <DialogHeader className="mb-4">
             <DialogTitle>{title}</DialogTitle>
           </DialogHeader>
