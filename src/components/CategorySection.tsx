@@ -1,7 +1,6 @@
 import type { Item } from '../lib/types'
 import { CardLink } from './CardLink'
-import ReactCountryFlag from 'react-country-flag'
-import { CURRENCIES_BY_CODE, formatCurrency } from '@/lib/currencies'
+import { CURRENCIES_BY_CODE, flagClass, formatCurrency } from '@/lib/currencies'
 
 interface CategorySectionProps {
   name: string
@@ -33,10 +32,7 @@ export function CategorySection({ name, items, onEdit, onDelete, isMultiCurrency
               return (
                 <div key={code} className="flex items-center gap-1.5">
                   {currency && (
-                    <ReactCountryFlag
-                      countryCode={currency.countryCode}
-                      style={{ fontSize: '0.9rem', lineHeight: '0.9rem', borderRadius: '2px' }}
-                    />
+                    <span className={flagClass(currency.countryCode)} style={{ fontSize: '0.9rem' }} />
                   )}
                   <span className="text-sm font-medium text-black">
                     {formatCurrency(total, code)}

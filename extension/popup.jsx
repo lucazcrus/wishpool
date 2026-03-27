@@ -27,6 +27,27 @@ const CATEGORIES_KEY = 'wishpoolCategories'
 const QUEUE_KEY = 'wishpoolQueue'
 const SESSION_KEY = 'wishpoolExtSession'
 const DEFAULT_CATEGORIES = ['Todos']
+
+const CURRENCIES = [
+  { code: 'BRL', name: 'Real', emoji: '🇧🇷' },
+  { code: 'USD', name: 'Dólar Americano', emoji: '🇺🇸' },
+  { code: 'EUR', name: 'Euro', emoji: '🇪🇺' },
+  { code: 'GBP', name: 'Libra Esterlina', emoji: '🇬🇧' },
+  { code: 'ARS', name: 'Peso Argentino', emoji: '🇦🇷' },
+  { code: 'MXN', name: 'Peso Mexicano', emoji: '🇲🇽' },
+  { code: 'CLP', name: 'Peso Chileno', emoji: '🇨🇱' },
+  { code: 'COP', name: 'Peso Colombiano', emoji: '🇨🇴' },
+  { code: 'PEN', name: 'Sol Peruano', emoji: '🇵🇪' },
+  { code: 'UYU', name: 'Peso Uruguaio', emoji: '🇺🇾' },
+  { code: 'CAD', name: 'Dólar Canadense', emoji: '🇨🇦' },
+  { code: 'AUD', name: 'Dólar Australiano', emoji: '🇦🇺' },
+  { code: 'JPY', name: 'Iene Japonês', emoji: '🇯🇵' },
+  { code: 'CNY', name: 'Yuan Chinês', emoji: '🇨🇳' },
+  { code: 'KRW', name: 'Won Sul-Coreano', emoji: '🇰🇷' },
+  { code: 'INR', name: 'Rúpia Indiana', emoji: '🇮🇳' },
+  { code: 'CHF', name: 'Franco Suíço', emoji: '🇨🇭' },
+]
+const DEFAULT_CURRENCY = CURRENCIES[0]
 const CONFIGURED_APP_ORIGIN = __WISHPOOL_APP_ORIGIN__
 const DEFAULT_APP_ORIGIN = 'https://bagapp.io'
 const SUPABASE_URL = 'https://okpxxpjskegpohowqqry.supabase.co'
@@ -42,11 +63,6 @@ function normalizeCategories(value) {
   return Array.from(new Set([...DEFAULT_CATEGORIES, ...raw].map((item) => String(item).trim()).filter(Boolean)))
 }
 
-function normalizePrice(raw) {
-  const cleaned = String(raw).trim().replace(/\./g, '').replace(',', '.')
-  const value = Number(cleaned)
-  return Number.isFinite(value) ? value : NaN
-}
 
 function getFaviconFromUrl(url) {
   try {
@@ -171,6 +187,7 @@ function PopupApp() {
 
   const [title, setTitle] = useState('')
   const [price, setPrice] = useState('')
+  const [selectedCurrency, setSelectedCurrency] = useState(DEFAULT_CURRENCY)
   const [activeTab, setActiveTab] = useState(null)
 
   const [loginEmail, setLoginEmail] = useState('')
@@ -380,7 +397,9 @@ function PopupApp() {
         return
       }
 
-      const parsedPrice = normalizePrice(price)
+      const parsedPrice = selectedCurrency.code === 'BRL'
+        ? parseFloat(price.replace(/\./g, '').replace(',', '.')) || 0
+        : parseFloat(price.replace(/,/g, '')) || 0
       if (!Number.isFinite(parsedPrice) || parsedPrice < 0) {
         setCaptureStatus({ message: 'Preço inválido.', type: 'error' })
         return
@@ -401,6 +420,7 @@ function PopupApp() {
         queueId: crypto.randomUUID(),
         name: title.trim(),
         price: parsedPrice,
+        currency: selectedCurrency.code,
         category: finalCategory,
         url: activeTab.url,
         image: activeTab.favIconUrl || fallbackFavicon,
@@ -416,6 +436,7 @@ function PopupApp() {
 
 
       setPrice('')
+      setSelectedCurrency(DEFAULT_CURRENCY)
       setCaptureStatus({ message: '', type: 'success' })
       setFeedbackLink({
         url: payload.url,
@@ -597,15 +618,49 @@ function PopupApp() {
 
                 <div className="grid gap-2">
                   <Label htmlFor="capture-price">Preço</Label>
-                  <Input
-                    id="capture-price"
-                    name="price"
-                    className={COMPOSER_INPUT_CLASS}
-                    placeholder="R$ 0,00"
-                    value={price}
-                    onChange={(e) => setPrice(e.target.value)}
-                    required
-                  />
+                  <div className="flex items-center gap-2">
+                    <Select value={selectedCurrency.code} onValueChange={(code) => {
+                      const c = CURRENCIES.find((c) => c.code === code) ?? DEFAULT_CURRENCY
+                      setSelectedCurrency(c)
+                      setPrice('')
+                    }}>
+                      <SelectTrigger className="h-10 w-auto shrink-0 gap-1.5 rounded-md border-[#e2e8f0] px-2.5 text-sm font-normal text-slate-950 hover:bg-white focus-visible:border-black">
+                        <SelectValue>
+                          <span className="flex items-center gap-1.5">
+                            <span>{selectedCurrency.emoji}</span>
+                            <span>{selectedCurrency.code}</span>
+                          </span>
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {CURRENCIES.map((c) => (
+                          <SelectItem key={c.code} value={c.code}>
+                            <span className="flex items-center gap-2">
+                              <span>{c.emoji}</span>
+                              <span className="font-medium">{c.code}</span>
+                              <span className="text-slate-500">{c.name}</span>
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      id="capture-price"
+                      name="price"
+                      className={`${COMPOSER_INPUT_CLASS} flex-1 min-w-0`}
+                      placeholder={selectedCurrency.code === 'BRL' ? '0,00' : '0.00'}
+                      value={price}
+                      inputMode="numeric"
+                      onChange={(e) => {
+                        const digits = e.target.value.replace(/\D/g, '')
+                        if (!digits) { setPrice(''); return }
+                        const amount = parseInt(digits, 10) / 100
+                        const locale = selectedCurrency.code === 'BRL' ? 'pt-BR' : 'en-US'
+                        setPrice(amount.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
+                      }}
+                      required
+                    />
+                  </div>
                 </div>
 
                 <div className="grid gap-2">

@@ -1,6 +1,5 @@
 import NumberFlow from '@number-flow/react'
-import ReactCountryFlag from 'react-country-flag'
-import { CURRENCIES_BY_CODE, formatCurrency } from '@/lib/currencies'
+import { CURRENCIES_BY_CODE, flagClass, formatCurrency } from '@/lib/currencies'
 
 interface CurrencyTotal {
   code: string
@@ -33,10 +32,7 @@ export function StatsPanel({
               return (
                 <div key={code} className="flex items-center gap-2">
                   {currency && (
-                    <ReactCountryFlag
-                      countryCode={currency.countryCode}
-                      style={{ fontSize: '1rem', lineHeight: '1rem', borderRadius: '2px' }}
-                    />
+                    <span className={flagClass(currency.countryCode)} style={{ fontSize: '1rem' }} />
                   )}
                   <span className="stat-value text-sm font-semibold text-black">
                     {formatCurrency(currencyTotal, code)}

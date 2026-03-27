@@ -1,6 +1,6 @@
 import { Trash2 } from 'lucide-react'
 import type { Item } from '../lib/types'
-import { formatBRL } from '../lib/format'
+import { formatCurrency } from '../lib/currencies'
 import { Button } from '@/components/ui/button'
 import LinkIcon from '../assets/images/link-icon.svg'
 
@@ -62,7 +62,7 @@ export function CardLink({ item, onEdit, onDelete }: CardLinkProps) {
       {/* Right: price + buttons */}
       {/* Mobile: full-width, indented to align with text (favicon 24px + gap 8px = 32px) */}
       <div className="flex items-center justify-between pl-8 w-full md:pl-0 md:w-auto md:gap-6 shrink-0">
-        <span className="font-medium text-base whitespace-nowrap">{formatBRL(item.price)}</span>
+        <span className="font-medium text-base whitespace-nowrap">{formatCurrency(item.price, item.currency ?? 'BRL')}</span>
         <div className="flex gap-2 items-center" role="group" aria-label="Ações do link">
           <Button
             variant="secondary"

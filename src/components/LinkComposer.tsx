@@ -7,8 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { cn } from '@/lib/utils'
 import appLogoSrc from '../assets/images/Logo-App.svg'
-import ReactCountryFlag from 'react-country-flag'
-import { CURRENCIES, DEFAULT_CURRENCY } from '@/lib/currencies'
+import { CURRENCIES, DEFAULT_CURRENCY, flagClass, parseMaskedPrice } from '@/lib/currencies'
 import type { Currency } from '@/lib/currencies'
 
 interface LinkComposerProps {
@@ -209,7 +208,7 @@ export function LinkComposer({ categories, onSubmit }: LinkComposerProps) {
       return
     }
 
-    const parsedPrice = parseFloat(price.replace(',', '.')) || 0
+    const parsedPrice = parseMaskedPrice(price, selectedCurrency.code)
     const finalName = name.trim() || hostnameFromUrl(finalUrl)
 
     try {
@@ -381,10 +380,7 @@ export function LinkComposer({ categories, onSubmit }: LinkComposerProps) {
                         aria-expanded={currencyPopoverOpen}
                         className="h-10 shrink-0 gap-1.5 rounded-md border-[#e2e8f0] px-2.5 text-sm font-normal text-slate-950 hover:bg-white"
                       >
-                        <ReactCountryFlag
-                          countryCode={selectedCurrency.countryCode}
-                          style={{ fontSize: '1.1em', lineHeight: '1em' }}
-                        />
+                        <span className={flagClass(selectedCurrency.countryCode)} style={{ fontSize: '1.1em' }} />
                         <span>{selectedCurrency.code}</span>
                         <ChevronsUpDown className="size-3.5 opacity-50" />
                       </Button>
@@ -405,10 +401,7 @@ export function LinkComposer({ categories, onSubmit }: LinkComposerProps) {
                                 value={`${currency.code} ${currency.name}`}
                                 onSelect={() => handleSelectCurrency(currency)}
                               >
-                                <ReactCountryFlag
-                                  countryCode={currency.countryCode}
-                                  style={{ fontSize: '1.1em', lineHeight: '1em', marginRight: '0.5rem' }}
-                                />
+                                <span className={cn(flagClass(currency.countryCode), 'mr-2')} style={{ fontSize: '1.1em' }} />
                                 <span className="mr-1 font-medium">{currency.code}</span>
                                 <span className="truncate text-slate-500">{currency.name}</span>
                                 <CheckIcon
@@ -427,8 +420,15 @@ export function LinkComposer({ categories, onSubmit }: LinkComposerProps) {
                   <Input
                     id="composer-price"
                     value={price}
-                    onChange={(event) => setPrice(event.target.value)}
-                    placeholder="0.00"
+                    onChange={(event) => {
+                      const digits = event.target.value.replace(/\D/g, '')
+                      if (!digits) { setPrice(''); return }
+                      const amount = parseInt(digits, 10) / 100
+                      const locale = selectedCurrency.code === 'BRL' ? 'pt-BR' : 'en-US'
+                      setPrice(amount.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
+                    }}
+                    placeholder={selectedCurrency.code === 'BRL' ? '0,00' : '0.00'}
+                    inputMode="numeric"
                     className="h-10 min-w-0 flex-1 rounded-md border-[#e2e8f0] px-3 text-sm text-slate-950 focus-visible:border-black"
                   />
                 </div>
