@@ -6,16 +6,17 @@ import { Label } from '@/components/ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { cn } from '@/lib/utils'
+import appLogoSrc from '../assets/images/Logo-App.svg'
+import ReactCountryFlag from 'react-country-flag'
+import { CURRENCIES, DEFAULT_CURRENCY } from '@/lib/currencies'
+import type { Currency } from '@/lib/currencies'
 
 interface LinkComposerProps {
   categories: string[]
-  onSubmit: (payload: { url: string; name: string; price: number; category: string }) => Promise<void> | void
+  onSubmit: (payload: { url: string; name: string; price: number; category: string; currency: string }) => Promise<void> | void
 }
 
 const DEFAULT_CATEGORY = 'Todos'
-
-const LOGO_DATA_URI =
-  "data:image/svg+xml,%3csvg%20width='36'%20height='32'%20viewBox='0%200%2036%2032'%20fill='none'%20xmlns='http://www.w3.org/2000/svg'%3e%3cpath%20d='M9.9292%2017.474V4.70983C9.9292%203.31388%2011.2146%202.2722%2012.5802%202.5614L32.2589%206.72864C33.2739%206.94358%2034%207.83955%2034%208.87707V21.4097C34%2022.7955%2032.7321%2023.8349%2031.3732%2023.5631L11.6946%2019.6274C10.6681%2019.4221%209.9292%2018.5208%209.9292%2017.474Z'%20fill='%23F7BD07'/%3e%3cpath%20d='M6.2478%2020.589V7.82487C6.2478%206.42892%207.53318%205.38724%208.89885%205.67644L28.5775%209.84368C29.5925%2010.0586%2030.3186%2010.9546%2030.3186%2011.9921V24.5247C30.3186%2025.9106%2029.0507%2026.95%2027.6918%2026.6782L8.0132%2022.7424C6.98669%2022.5371%206.2478%2021.6358%206.2478%2020.589Z'%20fill='%23DA6ED4'/%3e%3cpath%20d='M6.2478%2020.589V7.82487C6.2478%206.42892%207.53318%205.38724%208.89885%205.67644L28.5775%209.84368C29.5925%2010.0586%2030.3186%2010.9546%2030.3186%2011.9921V24.5247C30.3186%2025.9106%2029.0507%2026.95%2027.6918%2026.6782L8.0132%2022.7424C6.98669%2022.5371%206.2478%2021.6358%206.2478%2020.589Z'%20fill='%23D22C00'/%3e%3cpath%20d='M2%2024.2704V11.5063C2%2010.1103%203.28538%209.06864%204.65105%209.35784L24.3297%2013.5251C25.3447%2013.74%2026.0708%2014.636%2026.0708%2015.6735V28.2061C26.0708%2029.592%2024.8029%2030.6314%2023.444%2030.3596L3.76539%2026.4239C2.73889%2026.2186%202%2025.3172%202%2024.2704Z'%20fill='%2343A2ED'/%3e%3cpath%20d='M2%2024.2704V11.5063C2%2010.1103%203.28538%209.06864%204.65105%209.35784L24.3297%2013.5251C25.3447%2013.74%2026.0708%2014.636%2026.0708%2015.6735V28.2061C26.0708%2029.592%2024.8029%2030.6314%2023.444%2030.3596L3.76539%2026.4239C2.73889%2026.2186%202%2025.3172%202%2024.2704Z'%20fill='%23002ED2'/%3e%3c/svg%3e"
 
 function faviconFromUrl(url: string): string {
   try {
@@ -56,12 +57,14 @@ export function LinkComposer({ categories, onSubmit }: LinkComposerProps) {
   const [selectedCategory, setSelectedCategory] = useState(DEFAULT_CATEGORY)
   const [categorySearch, setCategorySearch] = useState('')
   const [categoryPopoverOpen, setCategoryPopoverOpen] = useState(false)
+  const [selectedCurrency, setSelectedCurrency] = useState<Currency>(DEFAULT_CURRENCY)
+  const [currencySearch, setCurrencySearch] = useState('')
+  const [currencyPopoverOpen, setCurrencyPopoverOpen] = useState(false)
   const [error, setError] = useState('')
 
   const [feedbackUrl, setFeedbackUrl] = useState('')
   const [feedbackFavicon, setFeedbackFavicon] = useState('')
 
-  const [freezeCursorBlink, setFreezeCursorBlink] = useState(false)
   const [panelHeight, setPanelHeight] = useState<number | undefined>(undefined)
 
   const formRef = useRef<HTMLFormElement>(null)
@@ -120,13 +123,6 @@ export function LinkComposer({ categories, onSubmit }: LinkComposerProps) {
     }
   }, [hasUrl, isFeedback, url])
 
-  useEffect(() => {
-    if (!hasUrl) return
-    setFreezeCursorBlink(true)
-    const timer = window.setTimeout(() => setFreezeCursorBlink(false), 500)
-    return () => window.clearTimeout(timer)
-  }, [url, hasUrl])
-
   useLayoutEffect(() => {
     const formNode = formRef.current
     const node = contentRef.current
@@ -146,7 +142,7 @@ export function LinkComposer({ categories, onSubmit }: LinkComposerProps) {
     const observer = new ResizeObserver(updateHeight)
     observer.observe(node)
     return () => observer.disconnect()
-  }, [visualState, rowUrl, name, price, selectedCategory, error, isSubmitting, categoryPopoverOpen])
+  }, [visualState, rowUrl, name, price, selectedCategory, selectedCurrency, error, isSubmitting, categoryPopoverOpen, currencyPopoverOpen])
 
   function resetComposer() {
     setUrl('')
@@ -155,6 +151,9 @@ export function LinkComposer({ categories, onSubmit }: LinkComposerProps) {
     setSelectedCategory(DEFAULT_CATEGORY)
     setCategorySearch('')
     setCategoryPopoverOpen(false)
+    setSelectedCurrency(DEFAULT_CURRENCY)
+    setCurrencySearch('')
+    setCurrencyPopoverOpen(false)
     setError('')
     setIsFocused(false)
     setIsLoading(false)
@@ -162,7 +161,6 @@ export function LinkComposer({ categories, onSubmit }: LinkComposerProps) {
     setIsFeedback(false)
     setFeedbackUrl('')
     setFeedbackFavicon('')
-    setFreezeCursorBlink(false)
   }
 
   function handleSelectCategory(category: string) {
@@ -180,6 +178,20 @@ export function LinkComposer({ categories, onSubmit }: LinkComposerProps) {
     setCategoryPopoverOpen(false)
     setError('')
   }
+
+  function handleSelectCurrency(currency: Currency) {
+    setSelectedCurrency(currency)
+    setCurrencySearch('')
+    setCurrencyPopoverOpen(false)
+  }
+
+  const filteredCurrencies = useMemo(() => {
+    const q = currencySearch.trim().toLowerCase()
+    if (!q) return CURRENCIES
+    return CURRENCIES.filter(
+      (c) => c.code.toLowerCase().includes(q) || c.name.toLowerCase().includes(q),
+    )
+  }, [currencySearch])
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -208,6 +220,7 @@ export function LinkComposer({ categories, onSubmit }: LinkComposerProps) {
           name: finalName,
           price: parsedPrice,
           category: selectedCategory.trim(),
+          currency: selectedCurrency.code,
         }),
       )
 
@@ -220,6 +233,8 @@ export function LinkComposer({ categories, onSubmit }: LinkComposerProps) {
       setPrice('')
       setCategorySearch('')
       setCategoryPopoverOpen(false)
+      setCurrencySearch('')
+      setCurrencyPopoverOpen(false)
       setError('')
     } catch {
       setError('Não foi possível adicionar o link. Tente novamente.')
@@ -262,8 +277,8 @@ export function LinkComposer({ categories, onSubmit }: LinkComposerProps) {
               )}
             >
               <img
-                src={LOGO_DATA_URI}
-                alt="Wishpool"
+                src={appLogoSrc}
+                alt="Bag"
                 className={cn(
                   'absolute inset-0 m-auto size-7 transition-all duration-200',
                   visualState === 'default' || visualState === 'active'
@@ -318,19 +333,6 @@ export function LinkComposer({ categories, onSubmit }: LinkComposerProps) {
                     placeholder="Cole a URL"
                     aria-label="Cole a URL"
                   />
-                  {!hasUrl && (
-                    <span
-                      aria-hidden
-                      className={cn(
-                        'pointer-events-none absolute left-0 top-1/2 -translate-y-1/2 text-lg leading-none text-black transition-opacity duration-150',
-                        freezeCursorBlink
-                          ? 'opacity-100'
-                          : 'animate-[linkComposerBlink_1s_step-end_infinite]',
-                      )}
-                    >
-                      |
-                    </span>
-                  )}
                 </div>
               ) : (
                 <p
@@ -368,16 +370,68 @@ export function LinkComposer({ categories, onSubmit }: LinkComposerProps) {
                 className="space-y-1.5 opacity-0 animate-[linkComposerFadeUp_200ms_ease-out_forwards]"
                 style={{ animationDelay: '220ms' }}
               >
-                <Label htmlFor="composer-price" className="text-sm font-medium text-black">
-                  Preço
-                </Label>
-                <Input
-                  id="composer-price"
-                  value={price}
-                  onChange={(event) => setPrice(event.target.value)}
-                  placeholder="R$ 0.00"
-                  className="h-10 rounded-md border-[#e2e8f0] px-3 text-sm text-slate-950 focus-visible:border-black"
-                />
+                <Label className="text-sm font-medium text-black">Preço</Label>
+                <div className="flex items-center gap-2">
+                  <Popover open={currencyPopoverOpen} onOpenChange={setCurrencyPopoverOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={currencyPopoverOpen}
+                        className="h-10 shrink-0 gap-1.5 rounded-md border-[#e2e8f0] px-2.5 text-sm font-normal text-slate-950 hover:bg-white"
+                      >
+                        <ReactCountryFlag
+                          countryCode={selectedCurrency.countryCode}
+                          style={{ fontSize: '1.1em', lineHeight: '1em' }}
+                        />
+                        <span>{selectedCurrency.code}</span>
+                        <ChevronsUpDown className="size-3.5 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent align="start" className="w-56 p-0">
+                      <Command>
+                        <CommandInput
+                          placeholder="Buscar moeda..."
+                          value={currencySearch}
+                          onValueChange={setCurrencySearch}
+                        />
+                        <CommandList>
+                          <CommandEmpty>Nenhuma moeda encontrada.</CommandEmpty>
+                          <CommandGroup>
+                            {filteredCurrencies.map((currency) => (
+                              <CommandItem
+                                key={currency.code}
+                                value={`${currency.code} ${currency.name}`}
+                                onSelect={() => handleSelectCurrency(currency)}
+                              >
+                                <ReactCountryFlag
+                                  countryCode={currency.countryCode}
+                                  style={{ fontSize: '1.1em', lineHeight: '1em', marginRight: '0.5rem' }}
+                                />
+                                <span className="mr-1 font-medium">{currency.code}</span>
+                                <span className="truncate text-slate-500">{currency.name}</span>
+                                <CheckIcon
+                                  className={cn(
+                                    'ml-auto size-4',
+                                    selectedCurrency.code === currency.code ? 'opacity-100' : 'opacity-0',
+                                  )}
+                                />
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  <Input
+                    id="composer-price"
+                    value={price}
+                    onChange={(event) => setPrice(event.target.value)}
+                    placeholder="0.00"
+                    className="h-10 min-w-0 flex-1 rounded-md border-[#e2e8f0] px-3 text-sm text-slate-950 focus-visible:border-black"
+                  />
+                </div>
               </div>
 
               <div
@@ -456,7 +510,7 @@ export function LinkComposer({ categories, onSubmit }: LinkComposerProps) {
                 <Button
                   type="submit"
                   disabled={isSubmitting}
-                  className="h-10 rounded-lg bg-black px-3 text-sm text-white transition-[transform,background] duration-150 hover:scale-[1.02] hover:bg-[#222] active:scale-[0.97]"
+                  className="h-10 rounded-lg bg-[#FC4E23] px-3 text-sm text-white transition-[transform,background] duration-150 hover:scale-[1.02] hover:bg-[#e6461f] active:scale-[0.97]"
                 >
                   {isSubmitting ? 'Adicionando...' : 'Adicionar link'}
                 </Button>
@@ -483,7 +537,7 @@ export function LinkComposer({ categories, onSubmit }: LinkComposerProps) {
                     setIsFocused(true)
                     window.requestAnimationFrame(() => urlInputRef.current?.focus())
                   }}
-                  className="h-10 rounded-lg bg-black px-3 text-sm text-white opacity-0 animate-[linkComposerFadeUp_200ms_ease-out_forwards]"
+                  className="h-10 rounded-lg bg-[#FC4E23] px-3 text-sm text-white opacity-0 animate-[linkComposerFadeUp_200ms_ease-out_forwards] hover:bg-[#e6461f]"
                   style={{ animationDelay: '410ms' }}
                 >
                   Novo Link

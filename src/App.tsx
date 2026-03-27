@@ -162,6 +162,14 @@ export default function App() {
 
   const total = items.reduce((sum, item) => sum + item.price, 0)
 
+  const currencyTotalsMap = items.reduce<Record<string, number>>((acc, item) => {
+    const code = item.currency ?? 'BRL'
+    acc[code] = (acc[code] ?? 0) + item.price
+    return acc
+  }, {})
+  const currencyTotals = Object.entries(currencyTotalsMap).map(([code, total]) => ({ code, total }))
+  const isMultiCurrency = currencyTotals.length > 1
+
   const handleDelete = useCallback(
     (id: string) => {
       const nextItems = items.filter((item) => item.id !== id)
@@ -179,9 +187,9 @@ export default function App() {
   }, [])
 
   const handleComposerSubmit = useCallback(
-    async ({ url, name, price, category }: { url: string; name: string; price: number; category: string }) => {
+    async ({ url, name, price, category, currency }: { url: string; name: string; price: number; category: string; currency: string }) => {
       const image = faviconFromUrl(url)
-      addItem({ id: crypto.randomUUID(), name, category, price, url, image })
+      addItem({ id: crypto.randomUUID(), name, category, price, currency, url, image })
     },
     [addItem],
   )
@@ -207,7 +215,7 @@ export default function App() {
         onCategoryChange={setActiveCategory}
         onLogout={signOut}
       />
-      <main className="px-4 pt-29 md:pt-18">
+      <main className={`px-4 ${orderedCategories.length > 0 ? 'pt-29' : 'pt-18'} md:pt-18`}>
         {/* Mobile: stats bar (desktop sidebar handles this on larger screens) */}
         <div className="md:hidden -mx-4 p-4 flex gap-4 bg-[#f9f9f9] border-b border-[#eee] mb-4">
           <div className="flex flex-col gap-1 flex-1">
@@ -247,6 +255,8 @@ export default function App() {
                 total={total}
                 itemCount={items.length}
                 categoryCount={categories.length}
+                currencyTotals={currencyTotals}
+                isMultiCurrency={isMultiCurrency}
               />
             </div>
           </div>
@@ -262,6 +272,7 @@ export default function App() {
                   items={grouped[category]}
                   onEdit={handleEdit}
                   onDelete={handleDelete}
+                  isMultiCurrency={isMultiCurrency}
                 />
               ))
             )}

@@ -62,7 +62,7 @@ export function AuthScreen() {
     <div className="min-h-screen bg-[#f7f7f7] flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Entrar no Wishpool</CardTitle>
+          <CardTitle>Entrar no Bag</CardTitle>
           <CardDescription>
             Entre com email e senha ou continue com Google.
           </CardDescription>

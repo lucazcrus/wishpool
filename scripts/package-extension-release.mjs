@@ -34,7 +34,7 @@ async function main() {
   const rawOrigin = process.env.WISHPOOL_APP_ORIGIN
   if (!rawOrigin) {
     throw new Error(
-      'Defina WISHPOOL_APP_ORIGIN (ex: https://app.seudominio.com) antes de empacotar.',
+      'Defina WISHPOOL_APP_ORIGIN (ex: https://bagapp.io) antes de empacotar.',
     )
   }
 

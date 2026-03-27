@@ -1,7 +1,7 @@
 import { createRoot } from 'react-dom/client'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Check, Globe, LogOut, Plus, Settings } from 'lucide-react'
-import NumberFlow from '@number-flow/react'
+import appLogoSrc from '../src/assets/images/Logo-App.svg'
 
 import { Avatar, AvatarFallback, AvatarImage } from '../src/components/ui/avatar'
 import { Button } from '../src/components/ui/button'
@@ -25,11 +25,10 @@ import {
 
 const CATEGORIES_KEY = 'wishpoolCategories'
 const QUEUE_KEY = 'wishpoolQueue'
-const SAVED_COUNT_KEY = 'wishpoolSavedCount'
 const SESSION_KEY = 'wishpoolExtSession'
 const DEFAULT_CATEGORIES = ['Todos']
 const CONFIGURED_APP_ORIGIN = __WISHPOOL_APP_ORIGIN__
-const DEFAULT_APP_ORIGIN = 'http://localhost:5173'
+const DEFAULT_APP_ORIGIN = 'https://bagapp.io'
 const SUPABASE_URL = 'https://okpxxpjskegpohowqqry.supabase.co'
 const SUPABASE_ANON_KEY = 'sb_publishable_i_N5por1Imv5eL20Y7VwRw_stIIpGCa'
 const NEW_CATEGORY_VALUE = '__new__'
@@ -63,11 +62,6 @@ function resolveAppOrigin(tabUrl) {
     if (CONFIGURED_APP_ORIGIN) {
       return new URL(CONFIGURED_APP_ORIGIN).origin
     }
-    if (!tabUrl) return DEFAULT_APP_ORIGIN
-    const parsed = new URL(tabUrl)
-    const isLocalHost = parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1'
-    const isHttp = parsed.protocol === 'http:' || parsed.protocol === 'https:'
-    if (isLocalHost && isHttp) return parsed.origin
   } catch {
     // noop
   }
@@ -121,7 +115,7 @@ async function signInWithGoogle() {
   }
 
   const redirectUrl = chrome.identity.getRedirectURL('supabase-auth')
-  console.log('[Wishpool] Google OAuth redirect URL (adicione no Supabase):', redirectUrl)
+  console.log('[Bag] Google OAuth redirect URL (adicione no Supabase):', redirectUrl)
 
   const authUrl =
     `${SUPABASE_URL}/auth/v1/authorize?provider=google` +
@@ -171,7 +165,6 @@ async function queueItem(payload) {
 
 function PopupApp() {
   const [session, setSession] = useState(null)
-  const [savedCount, setSavedCount] = useState(0)
   const [categories, setCategories] = useState(DEFAULT_CATEGORIES)
   const [selectedCategory, setSelectedCategory] = useState(DEFAULT_CATEGORIES[0])
   const [newCategory, setNewCategory] = useState('')
@@ -200,7 +193,7 @@ function PopupApp() {
     let cancelled = false
 
     async function bootstrap() {
-      const stored = await chrome.storage.local.get([CATEGORIES_KEY, SESSION_KEY, SAVED_COUNT_KEY])
+      const stored = await chrome.storage.local.get([CATEGORIES_KEY, SESSION_KEY])
       if (cancelled) return
 
       const normalized = normalizeCategories(stored[CATEGORIES_KEY])
@@ -212,8 +205,6 @@ function PopupApp() {
       const nextSession = stored[SESSION_KEY] || null
       setSession(nextSession)
 
-      const count = Number(stored[SAVED_COUNT_KEY] || 0)
-      setSavedCount(count)
 
       const tab = await getActiveTab()
       if (cancelled) return
@@ -231,9 +222,6 @@ function PopupApp() {
     const handleStorageChange = (changes, areaName) => {
       if (areaName !== 'local') return
 
-      if (changes[SAVED_COUNT_KEY]) {
-        setSavedCount(Number(changes[SAVED_COUNT_KEY].newValue || 0))
-      }
 
       if (changes[CATEGORIES_KEY]) {
         const normalized = normalizeCategories(changes[CATEGORIES_KEY].newValue)
@@ -426,10 +414,6 @@ function PopupApp() {
 
       await queueItem(payload)
 
-      const prevCount = Number((await chrome.storage.local.get([SAVED_COUNT_KEY]))[SAVED_COUNT_KEY] || 0)
-      const nextCount = prevCount + 1
-      await chrome.storage.local.set({ [SAVED_COUNT_KEY]: nextCount })
-      setSavedCount(nextCount)
 
       setPrice('')
       setCaptureStatus({ message: '', type: 'success' })
@@ -475,11 +459,7 @@ function PopupApp() {
       {!isLogged ? (
         <section aria-label="Login" className="min-h-[580px]">
           <header className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-            <div aria-hidden="true" className="relative h-10 w-12">
-              <span className="absolute left-3 top-0 h-5 w-10 rotate-[10deg] rounded-md bg-amber-400"></span>
-              <span className="absolute left-1.5 top-1 h-5 w-10 rotate-[10deg] rounded-md bg-orange-500"></span>
-              <span className="absolute left-0 top-2.5 h-5 w-10 rotate-[10deg] rounded-md bg-blue-700"></span>
-            </div>
+            <img src={appLogoSrc} alt="Bag" className="h-8 w-auto shrink-0" />
           </header>
 
           <div className="px-5 pb-5 pt-6">
@@ -527,10 +507,7 @@ function PopupApp() {
         <section ref={frameContentRef} aria-label="Adicionar link">
           <header className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
             <div className="flex items-center gap-3">
-              <span className="inline-flex h-8 w-8 min-w-8 items-center justify-center rounded-full bg-red-500 text-base font-semibold text-white">
-                <NumberFlow value={savedCount} className="leading-none" />
-              </span>
-              <strong className="text-sm font-semibold text-slate-900">Links salvos</strong>
+              <img src={appLogoSrc} alt="Bag" className="h-8 w-auto shrink-0" />
             </div>
 
             <DropdownMenu>

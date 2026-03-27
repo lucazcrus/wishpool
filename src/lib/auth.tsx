@@ -4,6 +4,7 @@ import type { Provider, Session, User } from '@supabase/supabase-js'
 import type { Profile } from './types'
 import { supabase, supabaseConfigError } from './supabase'
 import { profileFromAuthUser } from './auth-profile'
+import { getAppUrl } from './app-url'
 
 interface AuthContextValue {
   session: Session | null
@@ -22,6 +23,22 @@ interface AuthContextValue {
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
+
+function mapAuthError(error: unknown) {
+  if (!(error instanceof Error)) {
+    return new Error('Não foi possível autenticar.')
+  }
+
+  const message = error.message.trim()
+
+  if (message === 'Error sending confirmation email') {
+    return new Error(
+      'Não foi possível enviar o email de confirmação. Revise a configuração de SMTP/remetente no Supabase e na Resend.',
+    )
+  }
+
+  return error
+}
 
 async function ensureProfileRow(user: User) {
   if (!supabase) return
@@ -96,19 +113,19 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const signOut = useCallback(async () => {
     if (!supabase) throw new Error(supabaseConfigError || 'Supabase client not configured')
     const { error } = await supabase.auth.signOut()
-    if (error) throw error
+    if (error) throw mapAuthError(error)
   }, [])
 
   const signInWithPassword = useCallback(async (email: string, password: string) => {
     if (!supabase) throw new Error(supabaseConfigError || 'Supabase client not configured')
     const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) throw error
+    if (error) throw mapAuthError(error)
   }, [])
 
   const signUpWithPassword = useCallback(
     async (email: string, password: string, fullName: string) => {
       if (!supabase) throw new Error(supabaseConfigError || 'Supabase client not configured')
-      const redirectTo = `${window.location.origin}${window.location.pathname}`
+      const redirectTo = getAppUrl()
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -120,23 +137,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
           emailRedirectTo: redirectTo,
         },
       })
-      if (error) throw error
+      if (error) throw mapAuthError(error)
 
       const requiresEmailConfirmation = !data.session
-      if (requiresEmailConfirmation) {
-        const { error: resendError } = await supabase.auth.resend({
-          type: 'signup',
-          email,
-          options: {
-            emailRedirectTo: redirectTo,
-          },
-        })
-
-        if (resendError) {
-          console.error('Failed to resend signup confirmation email', resendError)
-        }
-      }
-
       return { requiresEmailConfirmation }
     },
     [],
@@ -147,12 +150,12 @@ export function AuthProvider({ children }: PropsWithChildren) {
     const response = await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: `${window.location.origin}${window.location.pathname}`,
+        redirectTo: getAppUrl(),
       },
     })
 
     if (response.error) {
-      throw response.error
+      throw mapAuthError(response.error)
     }
   }, [])
 
@@ -167,7 +170,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
           name: profile.name,
         },
       })
-      if (authError) throw authError
+      if (authError) throw mapAuthError(authError)
 
       const { error: profileError } = await supabase.from('profiles').upsert(
         {
@@ -177,7 +180,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
         },
         { onConflict: 'id' },
       )
-      if (profileError) throw profileError
+      if (profileError) throw mapAuthError(profileError)
 
       const { error: preferencesError } = await supabase.from('user_preferences').upsert(
         {
@@ -186,7 +189,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
         },
         { onConflict: 'user_id' },
       )
-      if (preferencesError) throw preferencesError
+      if (preferencesError) throw mapAuthError(preferencesError)
     },
     [session?.user],
   )

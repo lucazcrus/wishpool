@@ -47,8 +47,8 @@ const EXTENSION_TAILWIND_ENTRY = `
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
+  --primary: #FC4E23;
+  --primary-foreground: #ffffff;
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
@@ -75,6 +75,9 @@ async function buildPopupScript() {
     minify: false,
     alias: {
       '@': path.resolve(process.cwd(), 'src'),
+    },
+    loader: {
+      '.svg': 'dataurl',
     },
     define: {
       'process.env.NODE_ENV': '"production"',

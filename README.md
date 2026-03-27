@@ -23,6 +23,7 @@ npm run dev
 Arquivo `.env`:
 
 ```bash
+VITE_APP_URL=https://bagapp.io
 VITE_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
 VITE_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_PUBLIC_KEY
 ```
@@ -33,12 +34,21 @@ VITE_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_PUBLIC_KEY
 2. Em **Project Settings > API**, copie:
    - `Project URL` -> `VITE_SUPABASE_URL`
    - `anon public key` -> `VITE_SUPABASE_ANON_KEY`
-3. Em **SQL Editor**, execute o arquivo [`supabase/schema.sql`](./supabase/schema.sql).
-4. Em **Authentication > Providers**, habilite os provedores sociais desejados (ex.: Google e GitHub).
-5. Em **Authentication > URL Configuration**, adicione as URLs de redirecionamento:
+3. Defina `VITE_APP_URL` com a URL canônica da app web em produção.
+4. Em **SQL Editor**, execute o arquivo [`supabase/schema.sql`](./supabase/schema.sql).
+5. Em **Authentication > Providers**, habilite os provedores sociais desejados (ex.: Google e GitHub).
+6. Em **Authentication > URL Configuration**, adicione as URLs de redirecionamento:
    - `http://localhost:5173`
    - `http://localhost:5173/profile.html`
-   - domínio de produção (quando existir)
+   - `https://bagapp.io`
+   - `https://bagapp.io/profile.html`
+7. Em **Authentication > SMTP Settings**, configure a Resend:
+   - `Host`: `smtp.resend.com`
+   - `Port`: `465`
+   - `Username`: `resend`
+   - `Password`: `re_...` da sua conta Resend
+   - `Sender email`: um remetente do seu domínio validado, por exemplo `noreply@bagapp.io`
+8. Em **Authentication > Templates**, personalize o template de confirmação de cadastro apontando para a URL final da app.
 
 ## O que já está implementado
 
@@ -64,3 +74,24 @@ Tabelas criadas:
 
 - A aplicação mantém o comportamento atual de links/categorias, com dados locais separados por usuário autenticado.
 - O schema já está pronto para a próxima etapa: sincronizar `items` e `categories` diretamente no Supabase.
+
+## Deploy em produção
+
+Com a Vercel CLI instalada, o fluxo recomendado é:
+
+```bash
+vercel
+vercel --prod
+```
+
+Configure no projeto da Vercel as variáveis:
+
+- `VITE_APP_URL`
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+
+Depois, conecte o domínio no painel da Vercel e use o mesmo domínio em:
+
+- `VITE_APP_URL`
+- Supabase `Authentication > URL Configuration`
+- empacotamento da extensão com `WISHPOOL_APP_ORIGIN`

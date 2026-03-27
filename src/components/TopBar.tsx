@@ -1,4 +1,4 @@
-import Logo from '../assets/images/Logo.svg'
+import Logo from '../assets/images/Logo-App.svg'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -60,7 +60,7 @@ export function TopBar({
       {/* Main row: Logo + (tabs on desktop) + Avatar */}
       <div className="topbar-inner p-4">
         <a href={homePath} aria-label="Ir para o início">
-          <img src={Logo} alt="Wishpool" className="h-8 w-auto shrink-0" />
+          <img src={Logo} alt="Bag" className="h-8 w-auto shrink-0" />
         </a>
 
         {showBack ? (

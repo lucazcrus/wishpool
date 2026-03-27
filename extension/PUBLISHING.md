@@ -5,7 +5,7 @@
 Defina o origin da app web em produção e gere o pacote:
 
 ```bash
-WISHPOOL_APP_ORIGIN="https://app.seudominio.com" npm run package:extension
+WISHPOOL_APP_ORIGIN="https://bagapp.io" npm run package:extension
 ```
 
 Isso gera:
@@ -16,6 +16,11 @@ Isso gera:
 - `extension-release/popup.css`
 - `extension-release/sync-app.js`
 - `extension-release/wishpool-extension-vX.Y.Z.zip`
+
+Antes de gerar o pacote final, confirme que:
+
+- `VITE_APP_URL` da app web está com o mesmo origin (`https://bagapp.io`)
+- esse origin já foi adicionado no Supabase em `Authentication > URL Configuration`
 
 ## 2) OAuth do Google + Supabase
 
@@ -29,4 +34,3 @@ No Supabase Auth, adicione como Redirect URI o callback da extensão:
 - Subir o `.zip` gerado em `extension-release/`.
 - Garantir que política de privacidade e descrição da extensão estejam prontas no painel da Web Store.
 - Publicar o item.
-

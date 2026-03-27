@@ -19,6 +19,7 @@ export default defineConfig({
         main: 'index.html',
         profile: 'profile.html',
         landing: 'landing.html',
+        privacy: 'privacy.html',
       },
     },
   },

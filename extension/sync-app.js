@@ -1,14 +1,12 @@
 const EXT_QUEUE_KEY = "wishpoolQueue"
 const APP_QUEUE_KEY = "wishpool:extQueue"
 const EXT_CATEGORIES_KEY = "wishpoolCategories"
-const EXT_ITEM_COUNT_KEY = "wishpoolSavedCount"
 const APP_STATE_KEY_BASE = "wishpool:v1"
 const EXT_SESSION_KEY = "wishpoolExtSession"
 const SUPABASE_AUTH_STORAGE_KEY = "sb-okpxxpjskegpohowqqry-auth-token"
 const APP_QUEUE_SYNC_EVENT = "wishpool:extQueueUpdated"
 
 let activeUserId = null
-let lastSyncedCount = null
 let lastSyncedCategories = ""
 let lastSessionToken = ""
 let syncInFlight = false
@@ -90,21 +88,26 @@ async function syncToAppQueue() {
 
 async function syncFromAppState(userId) {
   const appState = readAppState(userId)
-  if (!appState) return
-
-  const categories = Array.isArray(appState?.categories) ? appState.categories.filter(Boolean) : []
-  const itemCount = Array.isArray(appState?.items) ? appState.items.length : 0
-  const categoriesKey = categories.join("||")
-
-  if (lastSyncedCount === itemCount && lastSyncedCategories === categoriesKey) {
+  if (!appState) {
+    if (lastSyncedCategories !== "") {
+      await chrome.storage.local.set({ [EXT_CATEGORIES_KEY]: [] })
+      lastSyncedCategories = ""
+    }
     return
   }
 
-  const updates = { [EXT_ITEM_COUNT_KEY]: itemCount }
-  if (categories.length > 0) updates[EXT_CATEGORIES_KEY] = categories
+  const categories = Array.isArray(appState?.categories) ? appState.categories.filter(Boolean) : []
+  const categoriesKey = categories.join("||")
+
+  if (lastSyncedCategories === categoriesKey) {
+    return
+  }
+
+  const updates = {
+    [EXT_CATEGORIES_KEY]: categories,
+  }
 
   await chrome.storage.local.set(updates)
-  lastSyncedCount = itemCount
   lastSyncedCategories = categoriesKey
 }
 
@@ -114,8 +117,12 @@ async function syncExtensionSessionFromSupabaseStorage() {
 
   const { userId, ...sessionData } = session
   if (session.accessToken !== lastSessionToken) {
-    await chrome.storage.local.set({ [EXT_SESSION_KEY]: sessionData })
+    await chrome.storage.local.set({
+      [EXT_SESSION_KEY]: sessionData,
+      [EXT_CATEGORIES_KEY]: [],
+    })
     lastSessionToken = session.accessToken
+    lastSyncedCategories = ""
   }
 
   return userId

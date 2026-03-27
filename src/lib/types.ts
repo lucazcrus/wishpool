@@ -3,6 +3,7 @@ export interface Item {
   name: string
   category: string
   price: number
+  currency?: string
   url: string
   image: string
 }

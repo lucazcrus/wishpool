@@ -1,7 +1,9 @@
-import { useState, useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties, FormEvent } from 'react'
-import logoSrc from './assets/images/Logo.svg'
-import mockupSrc from './assets/images/mockup.png'
+import logoSrc from './assets/images/Logo-Landing.svg'
+import slideOneSrc from './assets/images/img-slide-1.png'
+import slideTwoSrc from './assets/images/img-slide-2.png'
+import slideThreeSrc from './assets/images/img-slide-2-1.png'
 import googleIconSrc from './assets/images/icon-google.png'
 import { SupabaseConfigErrorScreen } from './components/SupabaseConfigErrorScreen'
 import { useAuth } from './lib/auth'
@@ -9,20 +11,25 @@ import { useAuth } from './lib/auth'
 const SLIDE_DURATION = 4500
 
 const slides = [
-  { num: '01', label: 'Acompanhe o valor total dos produtos' },
-  { num: '02', label: 'Organize seus links em abas editáveis' },
-  { num: '03', label: 'Edite ou delete cada link como quiser' },
+  {
+    num: '01',
+    label: 'Acompanhe o valor total dos produtos',
+    imageSrc: slideOneSrc,
+    imageClassName: 'object-cover object-top',
+  },
+  {
+    num: '02',
+    label: 'Organize seus links em abas editáveis',
+    imageSrc: slideTwoSrc,
+    imageClassName: 'object-cover object-top',
+  },
+  {
+    num: '03',
+    label: 'Edite ou delete cada link como quiser',
+    imageSrc: slideThreeSrc,
+    imageClassName: 'object-cover object-top',
+  },
 ]
-
-const BASE_MOCKUP_WIDTH_RATIO = 1
-const TOP_OFFSET_RATIO = 0.05
-const TOP_OFFSET_MIN = 36
-
-const SLIDE_POSES = [
-  { zoom: 4, anchor: 'left', offsetRatio: 0.35 },
-  { zoom: 0.9, anchor: 'left', offsetRatio: 0.15 },
-  { zoom: 1, anchor: 'right', offsetRatio: 0.1 },
-] as const
 
 export default function LandingApp() {
   const { user, isLoading, configError, signInWithPassword, signUpWithPassword, signInWithOAuth } =
@@ -38,36 +45,17 @@ export default function LandingApp() {
   const [message, setMessage] = useState<string | null>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Measure carousel inner width for responsive scaling
-  const navRef = useRef<HTMLDivElement>(null)
-  const carouselRef = useRef<HTMLDivElement>(null)
-  const [carouselW, setCarouselW] = useState(0)
-  const [navH, setNavH] = useState(0)
-
-  useEffect(() => {
-    const carousel = carouselRef.current
-    const nav = navRef.current
-    if (!carousel || !nav) return
-
-    const update = () => {
-      setCarouselW(carousel.clientWidth)
-      setNavH(nav.offsetHeight)
-    }
-    update()
-
-    const ro = new ResizeObserver(update)
-    ro.observe(carousel)
-    return () => ro.disconnect()
-  }, [])
-
-  const goTo = (i: number) => {
-    setActive(i)
-    setBarKey((k) => k + 1)
+  const goTo = (index: number) => {
+    setActive(index)
+    setBarKey((current) => current + 1)
   }
 
   useEffect(() => {
-    timerRef.current = setTimeout(() => goTo((active + 1) % 3), SLIDE_DURATION)
-    return () => { if (timerRef.current) clearTimeout(timerRef.current) }
+    timerRef.current = setTimeout(() => goTo((active + 1) % slides.length), SLIDE_DURATION)
+
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current)
+    }
   }, [active, barKey])
 
   useEffect(() => {
@@ -118,27 +106,6 @@ export default function LandingApp() {
     }
   }
 
-  const getMockupStyle = (): CSSProperties => {
-    if (carouselW <= 0) return {}
-
-    const pose = SLIDE_POSES[active]
-    const baseWidth = carouselW * BASE_MOCKUP_WIDTH_RATIO
-    const width = baseWidth * pose.zoom
-    const top = navH + Math.max(TOP_OFFSET_MIN, carouselW * TOP_OFFSET_RATIO)
-    const edgeOffset = carouselW * pose.offsetRatio
-    const left = pose.anchor === 'left' ? edgeOffset : carouselW - edgeOffset - width
-
-    return {
-      position: 'absolute',
-      left,
-      top,
-      width,
-      height: 'auto',
-      transition:
-        'left 0.72s cubic-bezier(0.4,0,0.2,1), top 0.72s cubic-bezier(0.4,0,0.2,1), width 0.72s cubic-bezier(0.4,0,0.2,1)',
-    }
-  }
-
   if (configError) {
     return <SupabaseConfigErrorScreen message={configError} />
   }
@@ -148,9 +115,8 @@ export default function LandingApp() {
       className="min-h-screen bg-[#f9f9f9] flex flex-col md:flex-row"
       style={{ fontFamily: 'Inter, sans-serif' }}
     >
-      {/* ── Sidebar ── */}
       <aside className="w-full md:w-89 md:shrink-0 flex flex-col justify-between gap-10 p-4 md:py-4 md:pl-4 md:pr-3 md:min-h-screen">
-        <img src={logoSrc} alt="Wishpool" className="w-9 h-8 shrink-0" />
+        <img src={logoSrc} alt="Bag" className="w-9 h-8 shrink-0" />
 
         <div className="flex flex-col gap-10">
           <div className="flex flex-col gap-3">
@@ -163,7 +129,6 @@ export default function LandingApp() {
           </div>
 
           <div className="bg-white border border-[#eee] rounded-lg flex flex-col gap-6 pb-4">
-            {/* Tabs */}
             <div className="flex">
               <button
                 onClick={() => setTab('login')}
@@ -185,7 +150,6 @@ export default function LandingApp() {
               </button>
             </div>
 
-            {/* Form */}
             <form className="flex flex-col gap-4 px-4" onSubmit={handleAuthSubmit}>
               {tab === 'register' && (
                 <div className="flex flex-col gap-1.5">
@@ -228,7 +192,7 @@ export default function LandingApp() {
                 <button
                   type="submit"
                   disabled={isSubmitting || isLoading}
-                  className="bg-[#0f172a] disabled:opacity-70 text-[#f8fafc] text-sm font-medium h-10 rounded-md w-full hover:bg-[#1e293b] transition-colors cursor-pointer"
+                  className="bg-[#FC4E23] disabled:opacity-70 text-white text-sm font-medium h-10 rounded-md w-full hover:bg-[#e6461f] transition-colors cursor-pointer"
                 >
                   {isLoading
                     ? 'Carregando...'
@@ -251,24 +215,28 @@ export default function LandingApp() {
 
               {message && <p className="text-sm text-[#475569]">{message}</p>}
             </form>
+
+            <div className="px-4">
+              <a
+                href="./privacy.html"
+                className="inline-flex text-sm font-medium text-[#666] underline-offset-4 transition-colors hover:text-black hover:underline"
+              >
+                Política de Privacidade
+              </a>
+            </div>
           </div>
         </div>
       </aside>
 
-      {/* ── Carousel ── */}
       <div className="flex-1 p-4 md:pl-0 min-h-125 md:min-h-0">
-        <div
-          ref={carouselRef}
-          className="relative h-full min-h-125 md:min-h-0 rounded-lg overflow-hidden bg-[#f7bd07]"
-        >
-          {/* Nav bar */}
-          <div ref={navRef} className="relative flex border-b border-[#e2ac05]">
+        <div className="relative h-full min-h-125 md:min-h-0 rounded-lg overflow-hidden bg-[#FBE7A2]">
+          <div className="relative z-10 flex border-b border-[#ead58f] bg-[#FBE7A2]">
             {slides.map((slide, i) => (
               <button
-                key={i}
+                key={slide.num}
                 onClick={() => goTo(i)}
                 className={`flex-1 flex items-center gap-4 px-4 py-6 text-sm font-semibold text-left transition-colors cursor-pointer ${
-                  i === active ? 'text-black' : 'text-[#a67e00]'
+                  i === active ? 'text-black' : 'text-[#A68B2E]'
                 }`}
               >
                 <span className="shrink-0">{slide.num}</span>
@@ -276,39 +244,44 @@ export default function LandingApp() {
               </button>
             ))}
 
-            {/* Completed bars */}
             {slides.map((_, i) =>
               i < active ? (
                 <div
                   key={`done-${i}`}
                   className="absolute -bottom-px h-px bg-black"
-                  style={{ left: `${(i * 100) / 3}%`, width: '33.3334%' }}
+                  style={{
+                    left: `${(i * 100) / slides.length}%`,
+                    width: `${100 / slides.length}%`,
+                  }}
                 />
               ) : null,
             )}
 
-            {/* Active animated bar */}
             <div
               key={`active-${barKey}`}
               className="progress-bar-animate absolute -bottom-px h-px bg-black"
               style={
                 {
-                  left: `${(active * 100) / 3}%`,
+                  left: `${(active * 100) / slides.length}%`,
+                  width: `${100 / slides.length}%`,
                   '--slide-duration': `${SLIDE_DURATION}ms`,
                 } as CSSProperties
               }
             />
           </div>
 
-          {/* Mockup — positioned and scaled per slide */}
-          {carouselW > 0 && (
-            <img
-              src={mockupSrc}
-              alt="App mockup"
-              className="absolute max-w-none rounded-lg pointer-events-none"
-              style={getMockupStyle()}
-            />
-          )}
+          <div className="absolute inset-x-0 bottom-0 top-[73px] overflow-hidden bg-[#FBE7A2]">
+            {slides.map((slide, index) => (
+              <img
+                key={slide.num}
+                src={slide.imageSrc}
+                alt={`Preview do slide ${slide.num}`}
+                className={`absolute inset-0 h-full w-full ${slide.imageClassName} transition-opacity duration-700 ease-out ${
+                  index === active ? 'opacity-100' : 'opacity-0'
+                }`}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </div>
