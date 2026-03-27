@@ -24,22 +24,30 @@ export function StatsPanel({
   return (
     <aside className="stats" aria-label="Resumo">
       {isMultiCurrency ? (
-        <div className="stat-item">
-          <div className="rounded-lg border border-[#eee] p-3 space-y-2 w-full">
-            <span className="text-xs font-medium text-neutral-400">Total salvo</span>
-            {currencyTotals.map(({ code, total: currencyTotal }) => {
-              const currency = CURRENCIES_BY_CODE[code]
-              return (
-                <div key={code} className="flex items-center gap-2">
-                  {currency && (
-                    <span className={flagClass(currency.countryCode)} style={{ fontSize: '1rem' }} />
-                  )}
-                  <span className="stat-value text-sm font-semibold text-black">
-                    {formatCurrency(currencyTotal, code)}
-                  </span>
-                </div>
-              )
-            })}
+        <div className="stat-item w-full">
+          <div className="rounded-lg border border-[#eee] w-full overflow-hidden">
+            <div className="px-3 py-2.5">
+              <span className="text-sm text-neutral-400">Total salvo</span>
+            </div>
+            <div className="border-t border-[#eee]" />
+            <div className="px-3 py-2.5 space-y-2">
+              {currencyTotals.map(({ code, total: currencyTotal }) => {
+                const currency = CURRENCIES_BY_CODE[code]
+                return (
+                  <div key={code} className="flex items-center gap-2">
+                    {currency && (
+                      <span
+                        className={`${flagClass(currency.countryCode)} fis`}
+                        style={{ fontSize: '1.4rem', borderRadius: '50%' }}
+                      />
+                    )}
+                    <span className="text-base font-semibold text-black">
+                      {formatCurrency(currencyTotal, code)}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
           </div>
         </div>
       ) : (
