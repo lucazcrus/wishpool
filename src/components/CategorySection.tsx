@@ -7,26 +7,23 @@ interface CategorySectionProps {
   items: Item[]
   onEdit: (item: Item) => void
   onDelete: (id: string) => void
-  isMultiCurrency?: boolean
 }
 
-export function CategorySection({ name, items, onEdit, onDelete, isMultiCurrency = false }: CategorySectionProps) {
-  const currencyTotals = isMultiCurrency
-    ? Object.entries(
-        items.reduce<Record<string, number>>((acc, item) => {
-          const code = item.currency ?? 'BRL'
-          acc[code] = (acc[code] ?? 0) + item.price
-          return acc
-        }, {}),
-      )
-    : []
+export function CategorySection({ name, items, onEdit, onDelete }: CategorySectionProps) {
+  const currencyTotals = Object.entries(
+    items.reduce<Record<string, number>>((acc, item) => {
+      const code = item.currency ?? 'BRL'
+      acc[code] = (acc[code] ?? 0) + item.price
+      return acc
+    }, {}),
+  )
 
   return (
     <section className="product-section">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="section-title">{name}</h2>
-        {isMultiCurrency && currencyTotals.length > 0 && (
-          <div className="flex items-center gap-3">
+        {currencyTotals.length > 0 && (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
             {currencyTotals.map(([code, total]) => {
               const currency = CURRENCIES_BY_CODE[code]
               return (

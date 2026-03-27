@@ -10,6 +10,7 @@ import type { Item } from './lib/types'
 import { useAuth, useRequiredUser } from './lib/auth'
 import { profileFromAuthUser } from './lib/auth-profile'
 import NumberFlow from '@number-flow/react'
+import { CURRENCIES_BY_CODE, flagClass, formatCurrency } from './lib/currencies'
 
 type ModalState =
   | { open: false }
@@ -78,7 +79,8 @@ export default function App() {
 
         if (!Number.isFinite(price) || price < 0) return
 
-        addItem({ id: crypto.randomUUID(), name, category, price, url: finalUrl, image })
+        const currency = String(p.currency || '').trim() || 'BRL'
+        addItem({ id: crypto.randomUUID(), name, category, price, currency, url: finalUrl, image })
         importedCategory = category
       })
 
@@ -107,7 +109,8 @@ export default function App() {
           const name = String(payload.name || '').trim() || new URL(finalUrl).hostname
           const image = String(payload.image || '').trim() || faviconFromUrl(finalUrl)
           if (Number.isFinite(price) && price >= 0) {
-            addItem({ id: crypto.randomUUID(), name, category, price, url: finalUrl, image })
+            const currency = String(payload.currency || '').trim() || 'BRL'
+            addItem({ id: crypto.randomUUID(), name, category, price, currency, url: finalUrl, image })
             importedCategory = category
           }
         }
@@ -168,7 +171,7 @@ export default function App() {
     return acc
   }, {})
   const currencyTotals = Object.entries(currencyTotalsMap).map(([code, total]) => ({ code, total }))
-  const isMultiCurrency = currencyTotals.length > 1
+  const hasCurrencyTotals = currencyTotals.length > 0
 
   const handleDelete = useCallback(
     (id: string) => {
@@ -219,18 +222,34 @@ export default function App() {
         {/* Mobile: stats bar (desktop sidebar handles this on larger screens) */}
         <div className="md:hidden -mx-4 p-4 flex gap-4 bg-[#f9f9f9] border-b border-[#eee] mb-4">
           <div className="flex flex-col gap-1 flex-1">
-            <span className="text-sm font-semibold text-black">
-              <NumberFlow
-                value={total}
-                locales="pt-BR"
-                format={{
-                  style: 'currency',
-                  currency: 'BRL',
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                }}
-              />
-            </span>
+            <div className="flex flex-col gap-1">
+              {hasCurrencyTotals ? (
+                currencyTotals.map(({ code, total: currencyTotal }) => {
+                  const currency = CURRENCIES_BY_CODE[code]
+                  return (
+                    <span key={code} className="flex items-center gap-1.5 text-sm font-semibold text-black">
+                      {currency && (
+                        <span className={flagClass(currency.countryCode)} style={{ fontSize: '0.95rem' }} />
+                      )}
+                      <span>{formatCurrency(currencyTotal, code)}</span>
+                    </span>
+                  )
+                })
+              ) : (
+                <span className="text-sm font-semibold text-black">
+                  <NumberFlow
+                    value={total}
+                    locales="pt-BR"
+                    format={{
+                      style: 'currency',
+                      currency: 'BRL',
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    }}
+                  />
+                </span>
+              )}
+            </div>
             <span className="text-sm font-medium text-[rgba(0,0,0,0.32)]">Total salvo</span>
           </div>
           <div className="flex flex-col gap-1 flex-1">
@@ -256,7 +275,6 @@ export default function App() {
                 itemCount={items.length}
                 categoryCount={categories.length}
                 currencyTotals={currencyTotals}
-                isMultiCurrency={isMultiCurrency}
               />
             </div>
           </div>
@@ -272,7 +290,6 @@ export default function App() {
                   items={grouped[category]}
                   onEdit={handleEdit}
                   onDelete={handleDelete}
-                  isMultiCurrency={isMultiCurrency}
                 />
               ))
             )}

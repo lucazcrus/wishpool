@@ -11,7 +11,6 @@ interface StatsPanelProps {
   itemCount: number
   categoryCount: number
   currencyTotals?: CurrencyTotal[]
-  isMultiCurrency?: boolean
 }
 
 export function StatsPanel({
@@ -19,11 +18,12 @@ export function StatsPanel({
   itemCount,
   categoryCount,
   currencyTotals = [],
-  isMultiCurrency = false,
 }: StatsPanelProps) {
+  const hasCurrencyTotals = currencyTotals.length > 0
+
   return (
     <aside className="stats" aria-label="Resumo">
-      {isMultiCurrency ? (
+      {hasCurrencyTotals ? (
         <div className="stat-item w-full">
           <div className="rounded-lg border border-[#eee] w-full overflow-hidden">
             <div className="px-3 py-2.5">

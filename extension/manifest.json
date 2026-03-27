@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Bag",
   "description": "Salve os links das suas lojas favoritas da internet num único lugar.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "action": {
     "default_title": "Salvar no Bag",
     "default_popup": "popup.html"

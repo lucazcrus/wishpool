@@ -119,7 +119,30 @@ function addClassLikeTokens(content, classNames) {
   }
 }
 
-const FLAG_COUNTRY_CODES = ['br', 'us', 'eu', 'gb', 'ar', 'mx', 'cl', 'co', 'pe', 'uy', 'ca', 'au', 'jp', 'cn', 'kr', 'in', 'ch']
+const FLAG_COUNTRY_CODES = [
+  'br',
+  'us',
+  'eu',
+  'gb',
+  'ar',
+  'mx',
+  'cl',
+  'co',
+  'pe',
+  'uy',
+  'ca',
+  'au',
+  'jp',
+  'cn',
+  'kr',
+  'in',
+  'ch',
+  'se',
+  'no',
+  'dk',
+  'za',
+  'ru',
+]
 
 async function buildFlagIconsCss() {
   const base = `.fi {

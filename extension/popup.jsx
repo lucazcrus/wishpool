@@ -22,32 +22,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../src/components/ui/select'
+import { CURRENCIES, DEFAULT_CURRENCY, flagClass, parseMaskedPrice } from '../src/lib/currencies'
 
 const CATEGORIES_KEY = 'wishpoolCategories'
 const QUEUE_KEY = 'wishpoolQueue'
 const SESSION_KEY = 'wishpoolExtSession'
 const DEFAULT_CATEGORIES = ['Todos']
 
-const CURRENCIES = [
-  { code: 'BRL', name: 'Real', countryCode: 'BR' },
-  { code: 'USD', name: 'Dólar Americano', countryCode: 'US' },
-  { code: 'EUR', name: 'Euro', countryCode: 'EU' },
-  { code: 'GBP', name: 'Libra Esterlina', countryCode: 'GB' },
-  { code: 'ARS', name: 'Peso Argentino', countryCode: 'AR' },
-  { code: 'MXN', name: 'Peso Mexicano', countryCode: 'MX' },
-  { code: 'CLP', name: 'Peso Chileno', countryCode: 'CL' },
-  { code: 'COP', name: 'Peso Colombiano', countryCode: 'CO' },
-  { code: 'PEN', name: 'Sol Peruano', countryCode: 'PE' },
-  { code: 'UYU', name: 'Peso Uruguaio', countryCode: 'UY' },
-  { code: 'CAD', name: 'Dólar Canadense', countryCode: 'CA' },
-  { code: 'AUD', name: 'Dólar Australiano', countryCode: 'AU' },
-  { code: 'JPY', name: 'Iene Japonês', countryCode: 'JP' },
-  { code: 'CNY', name: 'Yuan Chinês', countryCode: 'CN' },
-  { code: 'KRW', name: 'Won Sul-Coreano', countryCode: 'KR' },
-  { code: 'INR', name: 'Rúpia Indiana', countryCode: 'IN' },
-  { code: 'CHF', name: 'Franco Suíço', countryCode: 'CH' },
-]
-const DEFAULT_CURRENCY = CURRENCIES[0]
 const CONFIGURED_APP_ORIGIN = __WISHPOOL_APP_ORIGIN__
 const DEFAULT_APP_ORIGIN = 'https://bagapp.io'
 const SUPABASE_URL = 'https://okpxxpjskegpohowqqry.supabase.co'
@@ -397,9 +378,7 @@ function PopupApp() {
         return
       }
 
-      const parsedPrice = selectedCurrency.code === 'BRL'
-        ? parseFloat(price.replace(/\./g, '').replace(',', '.')) || 0
-        : parseFloat(price.replace(/,/g, '')) || 0
+      const parsedPrice = parseMaskedPrice(price, selectedCurrency.code)
       if (!Number.isFinite(parsedPrice) || parsedPrice < 0) {
         setCaptureStatus({ message: 'Preço inválido.', type: 'error' })
         return
@@ -627,7 +606,7 @@ function PopupApp() {
                       <SelectTrigger className="h-10 w-auto shrink-0 gap-1.5 rounded-md border-[#e2e8f0] px-2.5 text-sm font-normal text-slate-950 hover:bg-white focus-visible:border-black">
                         <SelectValue>
                           <span className="flex items-center gap-1.5">
-                            <span className={`fi fi-${selectedCurrency.countryCode.toLowerCase()}`} style={{ fontSize: '1.1em' }} />
+                            <span className={flagClass(selectedCurrency.countryCode)} style={{ fontSize: '1.1em' }} />
                             <span>{selectedCurrency.code}</span>
                           </span>
                         </SelectValue>
@@ -636,7 +615,7 @@ function PopupApp() {
                         {CURRENCIES.map((c) => (
                           <SelectItem key={c.code} value={c.code}>
                             <span className="flex items-center gap-2">
-                              <span className={`fi fi-${c.countryCode.toLowerCase()}`} style={{ fontSize: '1.1em' }} />
+                              <span className={flagClass(c.countryCode)} style={{ fontSize: '1.1em' }} />
                               <span className="font-medium">{c.code}</span>
                               <span className="text-slate-500">{c.name}</span>
                             </span>

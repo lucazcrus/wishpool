@@ -23431,13 +23431,51 @@ function SelectScrollDownButton2({ className, ...props }) {
   return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(ScrollDownButton, { "data-slot": "select-scroll-down-button", className: cn("flex cursor-default items-center justify-center py-1", className), ...props, children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(ChevronDown, { className: "size-4" }) });
 }
 
+// src/lib/currencies.ts
+var CURRENCIES = [
+  { code: "BRL", name: "Real", symbol: "R$", countryCode: "BR", emoji: "\u{1F1E7}\u{1F1F7}" },
+  { code: "USD", name: "D\xF3lar Americano", symbol: "$", countryCode: "US", emoji: "\u{1F1FA}\u{1F1F8}" },
+  { code: "EUR", name: "Euro", symbol: "\u20AC", countryCode: "EU", emoji: "\u{1F1EA}\u{1F1FA}" },
+  { code: "GBP", name: "Libra Esterlina", symbol: "\xA3", countryCode: "GB", emoji: "\u{1F1EC}\u{1F1E7}" },
+  { code: "ARS", name: "Peso Argentino", symbol: "$", countryCode: "AR", emoji: "\u{1F1E6}\u{1F1F7}" },
+  { code: "MXN", name: "Peso Mexicano", symbol: "$", countryCode: "MX", emoji: "\u{1F1F2}\u{1F1FD}" },
+  { code: "CLP", name: "Peso Chileno", symbol: "$", countryCode: "CL", emoji: "\u{1F1E8}\u{1F1F1}" },
+  { code: "COP", name: "Peso Colombiano", symbol: "$", countryCode: "CO", emoji: "\u{1F1E8}\u{1F1F4}" },
+  { code: "PEN", name: "Sol Peruano", symbol: "S/", countryCode: "PE", emoji: "\u{1F1F5}\u{1F1EA}" },
+  { code: "UYU", name: "Peso Uruguaio", symbol: "$", countryCode: "UY", emoji: "\u{1F1FA}\u{1F1FE}" },
+  { code: "CAD", name: "D\xF3lar Canadense", symbol: "CA$", countryCode: "CA", emoji: "\u{1F1E8}\u{1F1E6}" },
+  { code: "AUD", name: "D\xF3lar Australiano", symbol: "A$", countryCode: "AU", emoji: "\u{1F1E6}\u{1F1FA}" },
+  { code: "JPY", name: "Iene Japon\xEAs", symbol: "\xA5", countryCode: "JP", emoji: "\u{1F1EF}\u{1F1F5}" },
+  { code: "CNY", name: "Yuan Chin\xEAs", symbol: "\xA5", countryCode: "CN", emoji: "\u{1F1E8}\u{1F1F3}" },
+  { code: "KRW", name: "Won Sul-Coreano", symbol: "\u20A9", countryCode: "KR", emoji: "\u{1F1F0}\u{1F1F7}" },
+  { code: "INR", name: "R\xFApia Indiana", symbol: "\u20B9", countryCode: "IN", emoji: "\u{1F1EE}\u{1F1F3}" },
+  { code: "CHF", name: "Franco Su\xED\xE7o", symbol: "Fr", countryCode: "CH", emoji: "\u{1F1E8}\u{1F1ED}" },
+  { code: "SEK", name: "Coroa Sueca", symbol: "kr", countryCode: "SE", emoji: "\u{1F1F8}\u{1F1EA}" },
+  { code: "NOK", name: "Coroa Norueguesa", symbol: "kr", countryCode: "NO", emoji: "\u{1F1F3}\u{1F1F4}" },
+  { code: "DKK", name: "Coroa Dinamarquesa", symbol: "kr", countryCode: "DK", emoji: "\u{1F1E9}\u{1F1F0}" },
+  { code: "ZAR", name: "Rand Sul-Africano", symbol: "R", countryCode: "ZA", emoji: "\u{1F1FF}\u{1F1E6}" },
+  { code: "RUB", name: "Rublo Russo", symbol: "\u20BD", countryCode: "RU", emoji: "\u{1F1F7}\u{1F1FA}" }
+];
+var CURRENCIES_BY_CODE = Object.fromEntries(
+  CURRENCIES.map((c) => [c.code, c])
+);
+var DEFAULT_CURRENCY = CURRENCIES[0];
+function flagClass(countryCode) {
+  return `fi fi-${countryCode.toLowerCase()}`;
+}
+function parseMaskedPrice(masked, currencyCode) {
+  const isBRL = currencyCode === "BRL";
+  const normalized = isBRL ? masked.replace(/\./g, "").replace(",", ".") : masked.replace(/,/g, "");
+  return parseFloat(normalized) || 0;
+}
+
 // extension/popup.jsx
 var import_jsx_runtime28 = __toESM(require_jsx_runtime(), 1);
 var CATEGORIES_KEY = "wishpoolCategories";
 var QUEUE_KEY = "wishpoolQueue";
 var SESSION_KEY = "wishpoolExtSession";
 var DEFAULT_CATEGORIES = ["Todos"];
-var CONFIGURED_APP_ORIGIN = "https://bagapp.io";
+var CONFIGURED_APP_ORIGIN = "";
 var DEFAULT_APP_ORIGIN = "https://bagapp.io";
 var SUPABASE_URL = "https://okpxxpjskegpohowqqry.supabase.co";
 var SUPABASE_ANON_KEY = "sb_publishable_i_N5por1Imv5eL20Y7VwRw_stIIpGCa";
@@ -23447,11 +23485,6 @@ var COMPOSER_SELECT_TRIGGER_CLASS = "h-10 rounded-md border-[#e2e8f0] px-3 text-
 function normalizeCategories(value) {
   const raw = Array.isArray(value) ? value : [];
   return Array.from(new Set([...DEFAULT_CATEGORIES, ...raw].map((item) => String(item).trim()).filter(Boolean)));
-}
-function normalizePrice(raw) {
-  const cleaned = String(raw).trim().replace(/\./g, "").replace(",", ".");
-  const value = Number(cleaned);
-  return Number.isFinite(value) ? value : NaN;
 }
 function getFaviconFromUrl(url) {
   try {
@@ -23554,6 +23587,7 @@ function PopupApp() {
   const [newCategory, setNewCategory] = (0, import_react7.useState)("");
   const [title, setTitle] = (0, import_react7.useState)("");
   const [price, setPrice] = (0, import_react7.useState)("");
+  const [selectedCurrency, setSelectedCurrency] = (0, import_react7.useState)(DEFAULT_CURRENCY);
   const [activeTab, setActiveTab] = (0, import_react7.useState)(null);
   const [loginEmail, setLoginEmail] = (0, import_react7.useState)("");
   const [loginPassword, setLoginPassword] = (0, import_react7.useState)("");
@@ -23729,7 +23763,7 @@ function PopupApp() {
         setCaptureStatus({ message: "Abra a extens\xE3o em uma aba com URL http/https.", type: "error" });
         return;
       }
-      const parsedPrice = normalizePrice(price);
+      const parsedPrice = parseMaskedPrice(price, selectedCurrency.code);
       if (!Number.isFinite(parsedPrice) || parsedPrice < 0) {
         setCaptureStatus({ message: "Pre\xE7o inv\xE1lido.", type: "error" });
         return;
@@ -23748,6 +23782,7 @@ function PopupApp() {
         queueId: crypto.randomUUID(),
         name: title.trim(),
         price: parsedPrice,
+        currency: selectedCurrency.code,
         category: finalCategory,
         url: activeTab.url,
         image: activeTab.favIconUrl || fallbackFavicon,
@@ -23759,6 +23794,7 @@ function PopupApp() {
       }
       await queueItem(payload);
       setPrice("");
+      setSelectedCurrency(DEFAULT_CURRENCY);
       setCaptureStatus({ message: "", type: "success" });
       setFeedbackLink({
         url: payload.url,
@@ -23895,18 +23931,45 @@ function PopupApp() {
             ] }),
             /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)("div", { className: "grid gap-2", children: [
               /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(Label3, { htmlFor: "capture-price", children: "Pre\xE7o" }),
-              /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(
-                Input,
-                {
-                  id: "capture-price",
-                  name: "price",
-                  className: COMPOSER_INPUT_CLASS,
-                  placeholder: "R$ 0,00",
-                  value: price,
-                  onChange: (e) => setPrice(e.target.value),
-                  required: true
-                }
-              )
+              /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)("div", { className: "flex items-center gap-2", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)(Select2, { value: selectedCurrency.code, onValueChange: (code) => {
+                  const c = CURRENCIES.find((c2) => c2.code === code) ?? DEFAULT_CURRENCY;
+                  setSelectedCurrency(c);
+                  setPrice("");
+                }, children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(SelectTrigger2, { className: "h-10 w-auto shrink-0 gap-1.5 rounded-md border-[#e2e8f0] px-2.5 text-sm font-normal text-slate-950 hover:bg-white focus-visible:border-black", children: /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(SelectValue2, { children: /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)("span", { className: "flex items-center gap-1.5", children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("span", { className: flagClass(selectedCurrency.countryCode), style: { fontSize: "1.1em" } }),
+                    /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("span", { children: selectedCurrency.code })
+                  ] }) }) }),
+                  /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(SelectContent2, { children: CURRENCIES.map((c) => /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(SelectItem2, { value: c.code, children: /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)("span", { className: "flex items-center gap-2", children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("span", { className: flagClass(c.countryCode), style: { fontSize: "1.1em" } }),
+                    /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("span", { className: "font-medium", children: c.code }),
+                    /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("span", { className: "text-slate-500", children: c.name })
+                  ] }) }, c.code)) })
+                ] }),
+                /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(
+                  Input,
+                  {
+                    id: "capture-price",
+                    name: "price",
+                    className: `${COMPOSER_INPUT_CLASS} flex-1 min-w-0`,
+                    placeholder: selectedCurrency.code === "BRL" ? "0,00" : "0.00",
+                    value: price,
+                    inputMode: "numeric",
+                    onChange: (e) => {
+                      const digits = e.target.value.replace(/\D/g, "");
+                      if (!digits) {
+                        setPrice("");
+                        return;
+                      }
+                      const amount = parseInt(digits, 10) / 100;
+                      const locale = selectedCurrency.code === "BRL" ? "pt-BR" : "en-US";
+                      setPrice(amount.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+                    },
+                    required: true
+                  }
+                )
+              ] })
             ] }),
             /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)("div", { className: "grid gap-2", children: [
               /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(Label3, { children: "Categoria" }),
