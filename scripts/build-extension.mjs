@@ -119,6 +119,35 @@ function addClassLikeTokens(content, classNames) {
   }
 }
 
+const FLAG_COUNTRY_CODES = ['br', 'us', 'eu', 'gb', 'ar', 'mx', 'cl', 'co', 'pe', 'uy', 'ca', 'au', 'jp', 'cn', 'kr', 'in', 'ch']
+
+async function buildFlagIconsCss() {
+  const base = `.fi {
+  background-size: contain;
+  background-position: 50%;
+  background-repeat: no-repeat;
+  position: relative;
+  display: inline-block;
+  width: 1.333333em;
+  line-height: 1em;
+}
+.fi::before { content: " "; }
+`
+  const rules = await Promise.all(
+    FLAG_COUNTRY_CODES.map(async (code) => {
+      const svgPath = path.resolve(process.cwd(), `node_modules/flag-icons/flags/4x3/${code}.svg`)
+      try {
+        const svg = await fs.readFile(svgPath)
+        const b64 = svg.toString('base64')
+        return `.fi-${code} { background-image: url("data:image/svg+xml;base64,${b64}"); }`
+      } catch {
+        return ''
+      }
+    }),
+  )
+  return base + rules.filter(Boolean).join('\n')
+}
+
 async function buildPopupCss() {
   const [html, popupSource, popupBundle] = await Promise.all([
     fs.readFile(EXTENSION_POPUP_HTML, 'utf8'),
@@ -156,8 +185,12 @@ async function buildPopupCss() {
     onDependency() {},
   })
 
-  const css = compiler.build([...classNames])
-  await fs.writeFile(EXTENSION_POPUP_CSS, css)
+  const [tailwindCss, flagCss] = await Promise.all([
+    Promise.resolve(compiler.build([...classNames])),
+    buildFlagIconsCss(),
+  ])
+
+  await fs.writeFile(EXTENSION_POPUP_CSS, tailwindCss + '\n' + flagCss)
 }
 
 async function main() {

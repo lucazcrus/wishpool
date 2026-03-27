@@ -52,7 +52,7 @@ export function CardLink({ item, onEdit, onDelete }: CardLinkProps) {
             href={item.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="block min-w-0 max-w-full text-sm !text-neutral-400 group-hover:!text-black transition-colors"
+            className="block min-w-0 w-full overflow-hidden text-sm !text-neutral-400 group-hover:!text-black transition-colors"
           >
             <span className="block truncate">{item.url}</span>
           </a>

@@ -29,23 +29,23 @@ const SESSION_KEY = 'wishpoolExtSession'
 const DEFAULT_CATEGORIES = ['Todos']
 
 const CURRENCIES = [
-  { code: 'BRL', name: 'Real', emoji: '🇧🇷' },
-  { code: 'USD', name: 'Dólar Americano', emoji: '🇺🇸' },
-  { code: 'EUR', name: 'Euro', emoji: '🇪🇺' },
-  { code: 'GBP', name: 'Libra Esterlina', emoji: '🇬🇧' },
-  { code: 'ARS', name: 'Peso Argentino', emoji: '🇦🇷' },
-  { code: 'MXN', name: 'Peso Mexicano', emoji: '🇲🇽' },
-  { code: 'CLP', name: 'Peso Chileno', emoji: '🇨🇱' },
-  { code: 'COP', name: 'Peso Colombiano', emoji: '🇨🇴' },
-  { code: 'PEN', name: 'Sol Peruano', emoji: '🇵🇪' },
-  { code: 'UYU', name: 'Peso Uruguaio', emoji: '🇺🇾' },
-  { code: 'CAD', name: 'Dólar Canadense', emoji: '🇨🇦' },
-  { code: 'AUD', name: 'Dólar Australiano', emoji: '🇦🇺' },
-  { code: 'JPY', name: 'Iene Japonês', emoji: '🇯🇵' },
-  { code: 'CNY', name: 'Yuan Chinês', emoji: '🇨🇳' },
-  { code: 'KRW', name: 'Won Sul-Coreano', emoji: '🇰🇷' },
-  { code: 'INR', name: 'Rúpia Indiana', emoji: '🇮🇳' },
-  { code: 'CHF', name: 'Franco Suíço', emoji: '🇨🇭' },
+  { code: 'BRL', name: 'Real', countryCode: 'BR' },
+  { code: 'USD', name: 'Dólar Americano', countryCode: 'US' },
+  { code: 'EUR', name: 'Euro', countryCode: 'EU' },
+  { code: 'GBP', name: 'Libra Esterlina', countryCode: 'GB' },
+  { code: 'ARS', name: 'Peso Argentino', countryCode: 'AR' },
+  { code: 'MXN', name: 'Peso Mexicano', countryCode: 'MX' },
+  { code: 'CLP', name: 'Peso Chileno', countryCode: 'CL' },
+  { code: 'COP', name: 'Peso Colombiano', countryCode: 'CO' },
+  { code: 'PEN', name: 'Sol Peruano', countryCode: 'PE' },
+  { code: 'UYU', name: 'Peso Uruguaio', countryCode: 'UY' },
+  { code: 'CAD', name: 'Dólar Canadense', countryCode: 'CA' },
+  { code: 'AUD', name: 'Dólar Australiano', countryCode: 'AU' },
+  { code: 'JPY', name: 'Iene Japonês', countryCode: 'JP' },
+  { code: 'CNY', name: 'Yuan Chinês', countryCode: 'CN' },
+  { code: 'KRW', name: 'Won Sul-Coreano', countryCode: 'KR' },
+  { code: 'INR', name: 'Rúpia Indiana', countryCode: 'IN' },
+  { code: 'CHF', name: 'Franco Suíço', countryCode: 'CH' },
 ]
 const DEFAULT_CURRENCY = CURRENCIES[0]
 const CONFIGURED_APP_ORIGIN = __WISHPOOL_APP_ORIGIN__
@@ -627,7 +627,7 @@ function PopupApp() {
                       <SelectTrigger className="h-10 w-auto shrink-0 gap-1.5 rounded-md border-[#e2e8f0] px-2.5 text-sm font-normal text-slate-950 hover:bg-white focus-visible:border-black">
                         <SelectValue>
                           <span className="flex items-center gap-1.5">
-                            <span>{selectedCurrency.emoji}</span>
+                            <span className={`fi fi-${selectedCurrency.countryCode.toLowerCase()}`} style={{ fontSize: '1.1em' }} />
                             <span>{selectedCurrency.code}</span>
                           </span>
                         </SelectValue>
@@ -636,7 +636,7 @@ function PopupApp() {
                         {CURRENCIES.map((c) => (
                           <SelectItem key={c.code} value={c.code}>
                             <span className="flex items-center gap-2">
-                              <span>{c.emoji}</span>
+                              <span className={`fi fi-${c.countryCode.toLowerCase()}`} style={{ fontSize: '1.1em' }} />
                               <span className="font-medium">{c.code}</span>
                               <span className="text-slate-500">{c.name}</span>
                             </span>
