@@ -167,7 +167,7 @@ export default function App() {
   const selectableCategories = getUserCategoryOptions(categories)
   const filtered =
     activeCategory === ALL_CATEGORY
-      ? orderedCategories
+      ? orderedCategories.filter((name) => !isPurchaseHistoryCategory(name))
       : orderedCategories.filter((name) => name === activeCategory)
 
   const activeItems = items.filter((item) => !isPurchaseHistoryCategory(item.category))
