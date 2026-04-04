@@ -8,9 +8,17 @@ interface CardLinkProps {
   item: Item
   onEdit: (item: Item) => void
   onDelete: (id: string) => void
+  onMoveToHistory: (item: Item) => void
+  isHistory?: boolean
 }
 
-export function CardLink({ item, onEdit, onDelete }: CardLinkProps) {
+export function CardLink({
+  item,
+  onEdit,
+  onDelete,
+  onMoveToHistory,
+  isHistory = false,
+}: CardLinkProps) {
   return (
     <article
       data-id={item.id}
@@ -64,25 +72,40 @@ export function CardLink({ item, onEdit, onDelete }: CardLinkProps) {
       <div className="flex items-center justify-between pl-8 w-full md:pl-0 md:w-auto md:gap-6 shrink-0">
         <span className="font-medium text-base whitespace-nowrap">{formatCurrency(item.price, item.currency ?? 'BRL')}</span>
         <div className="flex gap-2 items-center" role="group" aria-label="Ações do link">
-          <Button
-            variant="secondary"
-            size="sm"
-            type="button"
-            className="h-12 md:h-9 rounded-[20px] md:rounded-xl bg-black/4 px-6 md:px-4 text-base font-medium text-black hover:bg-black/8"
-            onClick={() => onEdit(item)}
-          >
-            Editar
-          </Button>
-          <Button
-            variant="secondary"
-            size="icon"
-            type="button"
-            aria-label="Deletar"
-            className="size-12 md:size-9 rounded-[20px] md:rounded-xl bg-black/4 text-black hover:bg-black/8"
-            onClick={() => onDelete(item.id)}
-          >
-            <Trash2 size={22} />
-          </Button>
+          {!isHistory && (
+            <>
+              <Button
+                variant="secondary"
+                size="sm"
+                type="button"
+                className="h-12 md:h-9 rounded-[20px] md:rounded-xl bg-black/4 px-6 md:px-4 text-base font-medium text-black hover:bg-black/8"
+                onClick={() => onEdit(item)}
+              >
+                Editar
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                type="button"
+                className="h-12 md:h-9 rounded-[20px] md:rounded-xl bg-black/4 px-6 md:px-4 text-base font-medium text-black hover:bg-black/8"
+                onClick={() => onMoveToHistory(item)}
+              >
+                Remover da Lista
+              </Button>
+            </>
+          )}
+          {isHistory && (
+            <Button
+              variant="secondary"
+              size="icon"
+              aria-label="Deletar"
+              type="button"
+              className="size-12 md:size-9 rounded-[20px] md:rounded-xl bg-black/4 text-black hover:bg-black/8"
+              onClick={() => onDelete(item.id)}
+            >
+              <Trash2 size={22} />
+            </Button>
+          )}
         </div>
       </div>
     </article>

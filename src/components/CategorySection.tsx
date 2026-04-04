@@ -7,9 +7,18 @@ interface CategorySectionProps {
   items: Item[]
   onEdit: (item: Item) => void
   onDelete: (id: string) => void
+  onMoveToHistory: (item: Item) => void
+  isHistory?: boolean
 }
 
-export function CategorySection({ name, items, onEdit, onDelete }: CategorySectionProps) {
+export function CategorySection({
+  name,
+  items,
+  onEdit,
+  onDelete,
+  onMoveToHistory,
+  isHistory = false,
+}: CategorySectionProps) {
   const currencyTotals = Object.entries(
     items.reduce<Record<string, number>>((acc, item) => {
       const code = item.currency ?? 'BRL'
@@ -20,7 +29,7 @@ export function CategorySection({ name, items, onEdit, onDelete }: CategorySecti
 
   return (
     <section className="product-section">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
         <h2 className="section-title">{name}</h2>
         {currencyTotals.length > 0 && (
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -42,7 +51,14 @@ export function CategorySection({ name, items, onEdit, onDelete }: CategorySecti
       </div>
       <div className="item-list">
         {items.map((item) => (
-          <CardLink key={item.id} item={item} onEdit={onEdit} onDelete={onDelete} />
+          <CardLink
+            key={item.id}
+            item={item}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            onMoveToHistory={onMoveToHistory}
+            isHistory={isHistory}
+          />
         ))}
       </div>
     </section>

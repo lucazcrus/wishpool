@@ -11,6 +11,12 @@ import { useAuth, useRequiredUser } from './lib/auth'
 import { profileFromAuthUser } from './lib/auth-profile'
 import NumberFlow from '@number-flow/react'
 import { CURRENCIES_BY_CODE, flagClass, formatCurrency } from './lib/currencies'
+import {
+  ALL_CATEGORY,
+  getUserCategoryOptions,
+  isPurchaseHistoryCategory,
+  PURCHASE_HISTORY_CATEGORY,
+} from './lib/categories'
 
 type ModalState =
   | { open: false }
@@ -47,7 +53,7 @@ export default function App() {
   const { signOut } = useAuth()
   const user = useRequiredUser()
   const { state, setItems, addItem } = useStore(user.id, profileFromAuthUser(user))
-  const [activeCategory, setActiveCategory] = useState('Todos')
+  const [activeCategory, setActiveCategory] = useState(ALL_CATEGORY)
   const [modal, setModal] = useState<ModalState>({ open: false })
 
   const { items, categories, profile } = state
@@ -72,7 +78,7 @@ export default function App() {
         const finalUrl = sanitizeUrl(String(p.url || ''))
         if (!finalUrl) return
 
-        const category = String(p.category || '').trim() || categories[0] || 'Todos'
+        const category = String(p.category || '').trim() || categories[0] || ALL_CATEGORY
         const price = Number(p.price || 0)
         const name = String(p.name || '').trim() || new URL(finalUrl).hostname
         const image = String(p.image || '').trim() || faviconFromUrl(finalUrl)
@@ -104,7 +110,7 @@ export default function App() {
         const finalUrl = sanitizeUrl(String(payload.url || ''))
         if (finalUrl) {
           const category =
-            String(payload.category || '').trim() || state.categories[0] || 'Todos'
+            String(payload.category || '').trim() || state.categories[0] || ALL_CATEGORY
           const price = Number(payload.price || 0)
           const name = String(payload.name || '').trim() || new URL(finalUrl).hostname
           const image = String(payload.image || '').trim() || faviconFromUrl(finalUrl)
@@ -158,14 +164,16 @@ export default function App() {
   }, {})
 
   const orderedCategories = categories.filter((name) => grouped[name]?.length)
+  const selectableCategories = getUserCategoryOptions(categories)
   const filtered =
-    activeCategory === 'Todos'
+    activeCategory === ALL_CATEGORY
       ? orderedCategories
       : orderedCategories.filter((name) => name === activeCategory)
 
-  const total = items.reduce((sum, item) => sum + item.price, 0)
+  const activeItems = items.filter((item) => !isPurchaseHistoryCategory(item.category))
+  const total = activeItems.reduce((sum, item) => sum + item.price, 0)
 
-  const currencyTotalsMap = items.reduce<Record<string, number>>((acc, item) => {
+  const currencyTotalsMap = activeItems.reduce<Record<string, number>>((acc, item) => {
     const code = item.currency ?? 'BRL'
     acc[code] = (acc[code] ?? 0) + item.price
     return acc
@@ -178,8 +186,24 @@ export default function App() {
       const nextItems = items.filter((item) => item.id !== id)
       setItems(nextItems)
       const categoryStillExists = nextItems.some((item) => item.category === activeCategory)
-      if (activeCategory !== 'Todos' && !categoryStillExists) {
-        setActiveCategory('Todos')
+      if (activeCategory !== ALL_CATEGORY && !categoryStillExists) {
+        setActiveCategory(ALL_CATEGORY)
+      }
+    },
+    [items, setItems, activeCategory],
+  )
+
+  const handleMoveToHistory = useCallback(
+    (item: Item) => {
+      const nextItems = items.map((entry) =>
+        entry.id === item.id
+          ? { ...entry, category: PURCHASE_HISTORY_CATEGORY }
+          : entry,
+      )
+      setItems(nextItems)
+      const categoryStillExists = nextItems.some((entry) => entry.category === activeCategory)
+      if (activeCategory !== ALL_CATEGORY && !categoryStillExists) {
+        setActiveCategory(ALL_CATEGORY)
       }
     },
     [items, setItems, activeCategory],
@@ -213,7 +237,7 @@ export default function App() {
     <>
       <TopBar
         currentCategory={activeCategory}
-        categories={categories}
+        categories={orderedCategories}
         avatarName={profile.name}
         onCategoryChange={setActiveCategory}
         onLogout={signOut}
@@ -254,13 +278,13 @@ export default function App() {
           </div>
           <div className="flex flex-col gap-1 flex-1">
             <span className="text-sm font-semibold text-black">
-              <NumberFlow value={items.length} />
+              <NumberFlow value={activeItems.length} />
             </span>
             <span className="text-sm font-medium text-[rgba(0,0,0,0.32)]">Links</span>
           </div>
           <div className="flex flex-col gap-1 flex-1">
             <span className="text-sm font-semibold text-black">
-              <NumberFlow value={categories.length} />
+              <NumberFlow value={orderedCategories.length} />
             </span>
             <span className="text-sm font-medium text-[rgba(0,0,0,0.32)]">Categorias</span>
           </div>
@@ -272,8 +296,8 @@ export default function App() {
             <div className="sticky top-18">
               <StatsPanel
                 total={total}
-                itemCount={items.length}
-                categoryCount={categories.length}
+                itemCount={activeItems.length}
+                categoryCount={orderedCategories.length}
                 currencyTotals={currencyTotals}
               />
             </div>
@@ -290,6 +314,8 @@ export default function App() {
                   items={grouped[category]}
                   onEdit={handleEdit}
                   onDelete={handleDelete}
+                  onMoveToHistory={handleMoveToHistory}
+                  isHistory={isPurchaseHistoryCategory(category)}
                 />
               ))
             )}
@@ -298,14 +324,15 @@ export default function App() {
           <div className="hidden md:block md:col-span-2" />
         </div>
       </main>
-      <LinkComposer categories={categories} onSubmit={handleComposerSubmit} />
+      <LinkComposer categories={selectableCategories} onSubmit={handleComposerSubmit} />
       {modal.open && (
         <ItemModal
           mode={modal.mode}
           item={modal.mode === 'edit' ? modal.item : undefined}
           url={modal.mode === 'add' ? modal.url : undefined}
-          categories={categories}
+          categories={selectableCategories}
           onSave={handleSave}
+          onDelete={handleDelete}
           onClose={() => setModal({ open: false })}
         />
       )}

@@ -18,6 +18,7 @@ import { CheckIcon, ChevronsUpDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { CURRENCIES, CURRENCIES_BY_CODE, DEFAULT_CURRENCY, flagClass, parseMaskedPrice } from '@/lib/currencies'
 import type { Currency } from '@/lib/currencies'
+import { ALL_CATEGORY } from '@/lib/categories'
 
 interface ItemModalProps {
   mode: 'add' | 'edit'
@@ -25,6 +26,7 @@ interface ItemModalProps {
   url?: string
   categories: string[]
   onSave: (item: Item) => void
+  onDelete: (id: string) => void
   onClose: () => void
 }
 
@@ -51,7 +53,15 @@ function toMaskedPrice(price: number, currencyCode: string): string {
   return price.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-export function ItemModal({ mode, item, url = '', categories, onSave, onClose }: ItemModalProps) {
+export function ItemModal({
+  mode,
+  item,
+  url = '',
+  categories,
+  onSave,
+  onDelete,
+  onClose,
+}: ItemModalProps) {
   const safeUrl = url || item?.url || ''
   const hostname = safeUrl ? hostnameFromUrl(safeUrl) : ''
   const favicon = item?.image || (safeUrl ? faviconFromUrl(safeUrl) : '')
@@ -61,7 +71,7 @@ export function ItemModal({ mode, item, url = '', categories, onSave, onClose }:
   const [name, setName] = useState(item?.name ?? '')
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>(initialCurrency)
   const [price, setPrice] = useState(item?.price != null ? toMaskedPrice(item.price, initialCurrency.code) : '')
-  const [category, setCategory] = useState(item?.category ?? categories[0] ?? 'Todos')
+  const [category, setCategory] = useState(item?.category ?? categories[0] ?? ALL_CATEGORY)
   const [currencySearch, setCurrencySearch] = useState('')
   const [currencyPopoverOpen, setCurrencyPopoverOpen] = useState(false)
 
@@ -98,6 +108,12 @@ export function ItemModal({ mode, item, url = '', categories, onSave, onClose }:
       url: safeUrl,
       image: favicon,
     })
+  }
+
+  function handleDelete() {
+    if (!item) return
+    onDelete(item.id)
+    onClose()
   }
 
   return (
@@ -211,13 +227,18 @@ export function ItemModal({ mode, item, url = '', categories, onSave, onClose }:
                       </SelectItem>
                     ))
                   ) : (
-                    <SelectItem value="Todos">Todos</SelectItem>
+                    <SelectItem value={ALL_CATEGORY}>{ALL_CATEGORY}</SelectItem>
                   )}
                 </SelectContent>
               </Select>
             </div>
 
             <DialogFooter className="mt-1">
+              {mode === 'edit' && item && (
+                <Button type="button" variant="destructive" onClick={handleDelete} className="mr-auto">
+                  Deletar link
+                </Button>
+              )}
               <DialogClose asChild>
                 <Button type="button" variant="secondary">
                   Cancelar

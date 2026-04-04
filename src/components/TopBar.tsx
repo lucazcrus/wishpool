@@ -1,5 +1,6 @@
 import Logo from '../assets/images/Logo-App.svg'
 import { Button } from '@/components/ui/button'
+import { ALL_CATEGORY, sanitizeCategories } from '@/lib/categories'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,23 +25,6 @@ function getAvatarInitial(name: string) {
   return (String(name || '').trim()[0] || 'U').toUpperCase()
 }
 
-function sanitizeCategories(categories: string[]) {
-  const seen = new Set<string>()
-  const result: string[] = []
-
-  for (const category of categories) {
-    const normalized = category.trim()
-    if (!normalized) continue
-    if (normalized.toLowerCase() === 'todos') continue
-    const key = normalized.toLowerCase()
-    if (seen.has(key)) continue
-    seen.add(key)
-    result.push(normalized)
-  }
-
-  return result
-}
-
 export function TopBar({
   currentCategory,
   categories,
@@ -53,7 +37,7 @@ export function TopBar({
 }: TopBarProps) {
   const cleanedCategories = sanitizeCategories(categories)
   const hasCategories = cleanedCategories.length > 0
-  const allCategories = hasCategories ? ['Todos', ...cleanedCategories] : []
+  const allCategories = hasCategories ? [ALL_CATEGORY, ...cleanedCategories] : []
 
   return (
     <header className="topbar">

@@ -41,13 +41,17 @@ function saveState(storageKey: string, state: AppState) {
   localStorage.setItem(storageKey, JSON.stringify(state))
 }
 
+function categoriesFromItems(items: Item[]) {
+  return Array.from(new Set(items.map((item) => item.category.trim()).filter(Boolean)))
+}
+
 export function useStore(userId: string, initialProfile: Profile) {
   const storageKey = storageKeyForUser(userId)
   const [state, setState] = useState<AppState>(() => loadState(storageKey, initialProfile))
 
   const setItems = useCallback((items: Item[]) => {
     setState((prev) => {
-      const next = { ...prev, items }
+      const next = { ...prev, items, categories: categoriesFromItems(items) }
       saveState(storageKey, next)
       return next
     })

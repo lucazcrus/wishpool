@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import type { PropsWithChildren } from 'react'
-import type { Provider, Session, User } from '@supabase/supabase-js'
+import type { EmailOtpType, Provider, Session, User } from '@supabase/supabase-js'
 import type { Profile } from './types'
 import { supabase, supabaseConfigError } from './supabase'
 import { profileFromAuthUser } from './auth-profile'
@@ -62,6 +62,76 @@ async function ensureProfileRow(user: User) {
   )
 }
 
+function normalizeAuthType(type: string | null): EmailOtpType | null {
+  if (!type) return null
+
+  const allowedTypes: EmailOtpType[] = [
+    'signup',
+    'invite',
+    'magiclink',
+    'recovery',
+    'email_change',
+    'email',
+  ]
+
+  return allowedTypes.includes(type as EmailOtpType) ? (type as EmailOtpType) : null
+}
+
+function clearAuthParamsFromUrl() {
+  const url = new URL(window.location.href)
+  const keysToRemove = ['code', 'token_hash', 'type', 'next', 'error', 'error_code', 'error_description']
+  let changed = false
+
+  for (const key of keysToRemove) {
+    if (!url.searchParams.has(key)) continue
+    url.searchParams.delete(key)
+    changed = true
+  }
+
+  const hash = url.hash.replace(/^#/, '')
+  if (hash) {
+    const hashParams = new URLSearchParams(hash)
+    const hashKeysToRemove = ['access_token', 'refresh_token', 'expires_at', 'expires_in', 'token_type', 'type']
+
+    for (const key of hashKeysToRemove) {
+      if (!hashParams.has(key)) continue
+      hashParams.delete(key)
+      changed = true
+    }
+
+    url.hash = hashParams.toString() ? `#${hashParams.toString()}` : ''
+  }
+
+  if (changed) {
+    window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`)
+  }
+}
+
+async function handleAuthRedirect() {
+  if (!supabase) return
+
+  const url = new URL(window.location.href)
+  const code = url.searchParams.get('code')
+  const tokenHash = url.searchParams.get('token_hash')
+  const type = normalizeAuthType(url.searchParams.get('type'))
+
+  if (code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    if (error) throw mapAuthError(error)
+    clearAuthParamsFromUrl()
+    return
+  }
+
+  if (tokenHash && type) {
+    const { error } = await supabase.auth.verifyOtp({
+      token_hash: tokenHash,
+      type,
+    })
+    if (error) throw mapAuthError(error)
+    clearAuthParamsFromUrl()
+  }
+}
+
 export function AuthProvider({ children }: PropsWithChildren) {
   const [session, setSession] = useState<Session | null>(null)
   const [isLoading, setIsLoading] = useState(!supabaseConfigError)
@@ -74,7 +144,14 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
     let mounted = true
 
-    supabase.auth.getSession().then(async ({ data, error }) => {
+    ;(async () => {
+      try {
+        await handleAuthRedirect()
+      } catch (authRedirectError) {
+        console.error('Failed to process auth redirect', authRedirectError)
+      }
+
+      const { data, error } = await supabase.auth.getSession()
       if (error) {
         console.error('Failed to load session', error)
       }
@@ -89,7 +166,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
           console.error('Failed to ensure profile row', profileError)
         }
       }
-    })
+    })()
 
     const {
       data: { subscription },
