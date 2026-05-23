@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import type { AppState, Item, Profile } from './types'
 import { DEFAULT_CATEGORIES, DEFAULT_ITEMS, DEFAULT_PROFILE } from './data'
+import { syncReplaceAll, syncUpsertItem } from './link-sync'
 
 export const STORAGE_KEY = 'wishpool:v1'
 export const EXT_QUEUE_KEY = 'wishpool:extQueue'
@@ -55,7 +56,8 @@ export function useStore(userId: string, initialProfile: Profile) {
       saveState(storageKey, next)
       return next
     })
-  }, [storageKey])
+    void syncReplaceAll(userId, items)
+  }, [storageKey, userId])
 
   const addItem = useCallback((item: Item) => {
     setState((prev) => {
@@ -67,7 +69,8 @@ export function useStore(userId: string, initialProfile: Profile) {
       saveState(storageKey, next)
       return next
     })
-  }, [storageKey])
+    void syncUpsertItem(userId, item)
+  }, [storageKey, userId])
 
   const setCategories = useCallback((categories: string[]) => {
     setState((prev) => {
