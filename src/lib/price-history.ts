@@ -32,13 +32,18 @@ export async function fetchLatestAlert(linkId: string): Promise<PriceAlert | nul
   return data
 }
 
-export async function fetchPriceHistory(linkId: string): Promise<PricePoint[]> {
+export async function fetchPriceHistory(
+  linkId: string,
+  currency?: string,
+): Promise<PricePoint[]> {
   if (!supabase) return []
-  const { data, error } = await supabase
+  let query = supabase
     .from('link_price_history')
     .select('price, currency, captured_at')
     .eq('link_id', linkId)
     .order('captured_at', { ascending: true })
+  if (currency) query = query.eq('currency', currency)
+  const { data, error } = await query
   if (error) {
     console.warn('[price-history] fetchPriceHistory', error.message)
     return []

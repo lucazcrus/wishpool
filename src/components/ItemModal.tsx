@@ -82,13 +82,13 @@ export function ItemModal({
   useEffect(() => {
     if (mode !== 'edit' || !item?.id) return
     let cancelled = false
-    void fetchPriceHistory(item.id).then((points) => {
+    void fetchPriceHistory(item.id, item.currency).then((points) => {
       if (!cancelled) setHistory(points)
     })
     return () => {
       cancelled = true
     }
-  }, [mode, item?.id])
+  }, [mode, item?.id, item?.currency])
 
   const title = mode === 'edit' ? 'Editar link' : 'Novo link'
   const submitLabel = mode === 'edit' ? 'Salvar alterações' : 'Salvar link'

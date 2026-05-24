@@ -20,10 +20,11 @@ export function usePriceAlert(itemId: string | null | undefined): PriceAlertSumm
     }
     void fetchLatestAlert(itemId).then((alert) => {
       if (cancelled || !alert) return
+      const dropAmount = Math.max(0, alert.drop_amount)
       const dropPct =
-        alert.previous_price > 0 ? (alert.drop_amount / alert.previous_price) * 100 : 0
+        alert.previous_price > 0 ? (dropAmount / alert.previous_price) * 100 : 0
       setSummary({
-        dropAmount: alert.drop_amount,
+        dropAmount,
         dropPct,
         previousPrice: alert.previous_price,
         currentPrice: alert.current_price,
