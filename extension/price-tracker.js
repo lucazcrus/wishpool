@@ -77,6 +77,192 @@
     return null;
   }
 
+  // src/lib/site-adapters/parse.ts
+  function parseLocalizedPrice(raw) {
+    if (!raw) return null;
+    const cleaned = raw.replace(/[^\d.,-]/g, "");
+    if (!cleaned) return null;
+    const lastDot = cleaned.lastIndexOf(".");
+    const lastComma = cleaned.lastIndexOf(",");
+    let normalized;
+    if (lastDot === -1 && lastComma === -1) {
+      normalized = cleaned;
+    } else if (lastComma > lastDot) {
+      normalized = cleaned.replace(/\./g, "").replace(",", ".");
+    } else {
+      normalized = cleaned.replace(/,/g, "");
+    }
+    const n = Number(normalized);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  }
+  function symbolToCurrency(text) {
+    if (text.includes("R$")) return "BRL";
+    if (text.includes("US$")) return "USD";
+    if (text.includes("\u20AC")) return "EUR";
+    if (text.includes("\xA3")) return "GBP";
+    if (text.includes("\xA5")) return "JPY";
+    if (text.includes("CHF")) return "CHF";
+    if (/[A-Z]{0,2}\$/.test(text)) return "USD";
+    return null;
+  }
+  var EUR_TLDS = /* @__PURE__ */ new Set([
+    ".de",
+    ".fr",
+    ".it",
+    ".es",
+    ".nl",
+    ".pt",
+    ".ie",
+    ".be",
+    ".at",
+    ".fi",
+    ".lu",
+    ".gr",
+    ".sk",
+    ".si",
+    ".lt",
+    ".lv",
+    ".ee",
+    ".eu"
+  ]);
+  function currencyFromHostname(hostname) {
+    const h = hostname.toLowerCase();
+    if (h.endsWith(".com.br")) return "BRL";
+    if (h.endsWith(".com.mx")) return "MXN";
+    if (h.endsWith(".com.ar")) return "ARS";
+    if (h.endsWith(".com.au")) return "AUD";
+    if (h.endsWith(".co.uk") || h.endsWith(".uk")) return "GBP";
+    if (h.endsWith(".co.jp") || h.endsWith(".jp")) return "JPY";
+    if (h.endsWith(".ca")) return "CAD";
+    if (h.endsWith(".ch")) return "CHF";
+    for (const tld of EUR_TLDS) {
+      if (h.endsWith(tld)) return "EUR";
+    }
+    if (h.endsWith(".com")) return "USD";
+    return null;
+  }
+  async function waitFor(doc, selectors, timeoutMs = 5e3, intervalMs = 250) {
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      for (const sel of selectors) {
+        const el = doc.querySelector(sel);
+        if (el && el.textContent && el.textContent.trim()) return el;
+      }
+      await new Promise((r) => setTimeout(r, intervalMs));
+    }
+    for (const sel of selectors) {
+      const el = doc.querySelector(sel);
+      if (el) return el;
+    }
+    return null;
+  }
+  function firstNonEmptyText(doc, selectors) {
+    for (const sel of selectors) {
+      const el = doc.querySelector(sel);
+      const text = el?.textContent?.trim();
+      if (text) return text;
+    }
+    return null;
+  }
+
+  // src/lib/site-adapters/adidas.ts
+  var ADIDAS_HOST_RE = /(?:^|\.)adidas\.(?:com|com\.br|com\.mx|com\.ar|co\.uk|com\.au|co\.jp|de|fr|it|es|nl|ca)$/;
+  var ADIDAS_PRICE_SELECTORS = [
+    '[data-testid="main-price"]',
+    '[data-testid="product-price"]',
+    '[data-auto-id="product-price"]',
+    ".gl-price-item--sale",
+    ".gl-price-item--current",
+    ".gl-price-item",
+    ".product-price"
+  ];
+  async function waitForReady(doc) {
+    await waitFor(doc, ADIDAS_PRICE_SELECTORS, 4e3, 250);
+  }
+  function extract(doc) {
+    const priceText = firstNonEmptyText(doc, ADIDAS_PRICE_SELECTORS);
+    if (!priceText) return null;
+    const amount = parseLocalizedPrice(priceText);
+    if (!amount) return null;
+    const hostname = doc.defaultView?.location?.hostname ?? "";
+    const currency = symbolToCurrency(priceText) ?? currencyFromHostname(hostname);
+    if (!currency) return null;
+    return { amount, currency };
+  }
+  var adidasAdapter = {
+    name: "adidas",
+    matches: (hostname) => ADIDAS_HOST_RE.test(hostname),
+    extract,
+    waitForReady
+  };
+
+  // src/lib/site-adapters/amazon.ts
+  var AMAZON_HOST_RE = /(?:^|\.)amazon\.(?:com|com\.br|com\.mx|com\.au|co\.uk|de|fr|it|es|nl|ca|co\.jp)$/;
+  var AMAZON_PRICE_SELECTORS = [
+    '#corePriceDisplay_desktop_feature_div .a-price[data-a-color="price"] .a-offscreen',
+    '#corePrice_feature_div .a-price[data-a-color="price"] .a-offscreen',
+    '#corePrice_desktop .a-price[data-a-color="price"] .a-offscreen',
+    '#apex_desktop .a-price[data-a-color="price"] .a-offscreen',
+    ".priceToPay .a-offscreen",
+    "#priceblock_ourprice",
+    "#priceblock_dealprice",
+    "#priceblock_saleprice",
+    "#corePrice_feature_div .a-offscreen"
+  ];
+  function extract2(doc) {
+    const priceText = firstNonEmptyText(doc, AMAZON_PRICE_SELECTORS);
+    if (!priceText) return null;
+    const amount = parseLocalizedPrice(priceText);
+    if (!amount) return null;
+    const hostname = doc.defaultView?.location?.hostname ?? "";
+    const currency = symbolToCurrency(priceText) ?? currencyFromHostname(hostname);
+    if (!currency) return null;
+    return { amount, currency };
+  }
+  var amazonAdapter = {
+    name: "amazon",
+    matches: (hostname) => AMAZON_HOST_RE.test(hostname),
+    extract: extract2
+  };
+
+  // src/lib/site-adapters/nike.ts
+  var NIKE_HOST_RE = /(?:^|\.)nike\.(?:com|com\.br|com\.mx|co\.uk|com\.au|co\.jp|de|fr|it|es|nl|ca)$/;
+  var NIKE_PRICE_SELECTORS = [
+    '[data-testid="currentPrice-container"]',
+    '[data-testid="product-price-reduced"]',
+    '[data-testid="product-price"]',
+    '[data-test="product-price-reduced"]',
+    '[data-test="product-price"]',
+    ".product-price.is--current-price",
+    ".product-price"
+  ];
+  async function waitForReady2(doc) {
+    await waitFor(doc, NIKE_PRICE_SELECTORS, 4e3, 250);
+  }
+  function extract3(doc) {
+    const priceText = firstNonEmptyText(doc, NIKE_PRICE_SELECTORS);
+    if (!priceText) return null;
+    const amount = parseLocalizedPrice(priceText);
+    if (!amount) return null;
+    const hostname = doc.defaultView?.location?.hostname ?? "";
+    const currency = symbolToCurrency(priceText) ?? currencyFromHostname(hostname);
+    if (!currency) return null;
+    return { amount, currency };
+  }
+  var nikeAdapter = {
+    name: "nike",
+    matches: (hostname) => NIKE_HOST_RE.test(hostname),
+    extract: extract3,
+    waitForReady: waitForReady2
+  };
+
+  // src/lib/site-adapters/index.ts
+  var ADAPTERS = [amazonAdapter, nikeAdapter, adidasAdapter];
+  function pickAdapter(hostname) {
+    const normalized = hostname.toLowerCase();
+    return ADAPTERS.find((a) => a.matches(normalized)) ?? null;
+  }
+
   // extension/price-tracker.src.js
   var SESSION_KEY = "wishpoolExtSession";
   var LINKS_INDEX_KEY = "wishpoolLinksIndex";
@@ -147,7 +333,15 @@
     const now = Date.now();
     const lastFired = fired[here] || 0;
     if (now - lastFired < MIN_FIRE_INTERVAL_MS) return;
-    const extracted = extractPriceFromDocument(document);
+    const adapter = pickAdapter(window.location.hostname);
+    if (adapter?.waitForReady) {
+      try {
+        await adapter.waitForReady(document);
+      } catch {
+      }
+    }
+    let extracted = adapter?.extract(document) ?? null;
+    if (!extracted) extracted = extractPriceFromDocument(document);
     if (!extracted) return;
     if (extracted.currency !== entry.currency) return;
     if (extracted.amount === entry.lastPrice) {

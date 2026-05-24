@@ -1,4 +1,5 @@
 import { extractPriceFromDocument } from '../src/lib/price-extractor.ts'
+import { pickAdapter } from '../src/lib/site-adapters/index.ts'
 
 const SESSION_KEY = 'wishpoolExtSession'
 const LINKS_INDEX_KEY = 'wishpoolLinksIndex' // { [url]: { itemId, currency, lastPrice } }
@@ -69,7 +70,13 @@ async function run() {
   const lastFired = fired[here] || 0
   if (now - lastFired < MIN_FIRE_INTERVAL_MS) return
 
-  const extracted = extractPriceFromDocument(document)
+  const adapter = pickAdapter(window.location.hostname)
+  if (adapter?.waitForReady) {
+    try { await adapter.waitForReady(document) } catch { /* ignore */ }
+  }
+
+  let extracted = adapter?.extract(document) ?? null
+  if (!extracted) extracted = extractPriceFromDocument(document)
   if (!extracted) return
   if (extracted.currency !== entry.currency) return
   if (extracted.amount === entry.lastPrice) {
