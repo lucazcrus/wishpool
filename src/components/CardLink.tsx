@@ -1,8 +1,9 @@
-import { Trash2 } from 'lucide-react'
+import { Trash2, TrendingDown } from 'lucide-react'
 import type { Item } from '../lib/types'
 import { formatCurrency } from '../lib/currencies'
 import { Button } from '@/components/ui/button'
 import LinkIcon from '../assets/images/link-icon.svg'
+import { usePriceAlert } from '@/lib/use-price-alert'
 
 interface CardLinkProps {
   item: Item
@@ -19,6 +20,8 @@ export function CardLink({
   onMoveToHistory,
   isHistory = false,
 }: CardLinkProps) {
+  const alert = usePriceAlert(item.id)
+
   return (
     <article
       data-id={item.id}
@@ -70,7 +73,20 @@ export function CardLink({
       {/* Right: price + buttons */}
       {/* Mobile: full-width, indented to align with text (favicon 24px + gap 8px = 32px) */}
       <div className="flex items-center justify-between pl-8 w-full md:pl-0 md:w-auto md:gap-6 shrink-0">
-        <span className="font-medium text-base whitespace-nowrap">{formatCurrency(item.price, item.currency ?? 'BRL')}</span>
+        <div className="flex flex-col items-end gap-0.5">
+          <span className="font-medium text-base whitespace-nowrap">
+            {formatCurrency(item.price, item.currency ?? 'BRL')}
+          </span>
+          {alert && (
+            <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700">
+              <TrendingDown className="size-3" aria-hidden="true" />
+              <span>
+                -{formatCurrency(alert.dropAmount, item.currency ?? 'BRL')}
+              </span>
+              <span className="text-emerald-600/80">({alert.dropPct.toFixed(0)}%)</span>
+            </span>
+          )}
+        </div>
         <div className="flex gap-2 items-center" role="group" aria-label="Ações do link">
           {!isHistory && (
             <>
