@@ -7,6 +7,8 @@ const EXTENSION_POPUP_HTML = 'extension/popup.html'
 const EXTENSION_POPUP_SOURCE = 'extension/popup.jsx'
 const EXTENSION_POPUP_SCRIPT = 'extension/popup.js'
 const EXTENSION_POPUP_CSS = 'extension/popup.css'
+const PRICE_TRACKER_SOURCE = 'extension/price-tracker.src.js'
+const PRICE_TRACKER_OUTPUT = 'extension/price-tracker.js'
 const EXTENSION_TAILWIND_ENTRY = `
 @import "tailwindcss";
 @import "shadcn/tailwind.css";
@@ -216,10 +218,25 @@ async function buildPopupCss() {
   await fs.writeFile(EXTENSION_POPUP_CSS, tailwindCss + '\n' + flagCss)
 }
 
+async function buildPriceTracker() {
+  await esbuild({
+    entryPoints: [PRICE_TRACKER_SOURCE],
+    outfile: PRICE_TRACKER_OUTPUT,
+    bundle: true,
+    format: 'iife',
+    target: ['chrome109'],
+    minify: false,
+    alias: {
+      '@': path.resolve(process.cwd(), 'src'),
+    },
+  })
+}
+
 async function main() {
   await buildPopupScript()
   await buildPopupCss()
-  console.log('Extension popup built: popup.js + popup.css')
+  await buildPriceTracker()
+  console.log('Extension popup built: popup.js + popup.css + price-tracker.js')
 }
 
 main().catch((error) => {

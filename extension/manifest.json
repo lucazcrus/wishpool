@@ -2,22 +2,26 @@
   "manifest_version": 3,
   "name": "Bag",
   "description": "Salve os links das suas lojas favoritas da internet num único lugar.",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "action": {
     "default_title": "Salvar no Bag",
     "default_popup": "popup.html"
   },
-  "permissions": ["activeTab", "tabs", "storage", "identity"],
+  "permissions": ["activeTab", "tabs", "storage", "identity", "alarms"],
   "host_permissions": [
     "https://bagapp.io/*",
-    "https://okpxxpjskegpohowqqry.supabase.co/*"
+    "https://okpxxpjskegpohowqqry.supabase.co/*",
+    "<all_urls>"
   ],
   "content_scripts": [
     {
-      "matches": [
-        "https://bagapp.io/*"
-      ],
+      "matches": ["https://bagapp.io/*"],
       "js": ["sync-app.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["price-tracker.js"],
       "run_at": "document_idle"
     }
   ]
