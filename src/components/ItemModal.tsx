@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { Item } from '../lib/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -19,6 +19,8 @@ import { cn } from '@/lib/utils'
 import { CURRENCIES, CURRENCIES_BY_CODE, DEFAULT_CURRENCY, flagClass, parseMaskedPrice } from '@/lib/currencies'
 import type { Currency } from '@/lib/currencies'
 import { ALL_CATEGORY } from '@/lib/categories'
+import { fetchPriceHistory, markAlertsRead, type PricePoint } from '@/lib/price-history'
+import { PriceSparkline } from '@/components/PriceSparkline'
 
 interface ItemModalProps {
   mode: 'add' | 'edit'
@@ -75,6 +77,19 @@ export function ItemModal({
   const [currencySearch, setCurrencySearch] = useState('')
   const [currencyPopoverOpen, setCurrencyPopoverOpen] = useState(false)
 
+  const [history, setHistory] = useState<PricePoint[]>([])
+
+  useEffect(() => {
+    if (mode !== 'edit' || !item?.id) return
+    let cancelled = false
+    void fetchPriceHistory(item.id).then((points) => {
+      if (!cancelled) setHistory(points)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [mode, item?.id])
+
   const title = mode === 'edit' ? 'Editar link' : 'Novo link'
   const submitLabel = mode === 'edit' ? 'Salvar alterações' : 'Salvar link'
 
@@ -117,7 +132,15 @@ export function ItemModal({
   }
 
   return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) {
+          if (item?.id) void markAlertsRead(item.id)
+          onClose()
+        }
+      }}
+    >
       <DialogContent className="max-w-135 p-0">
         <div className="p-4 overflow-y-auto max-h-[90vh]">
           <DialogHeader className="mb-4">
@@ -131,6 +154,14 @@ export function ItemModal({
                 <p className="preview-host">{hostname}</p>
                 <p className="preview-url truncate">{safeUrl}</p>
               </div>
+            </div>
+          )}
+          {mode === 'edit' && item && (
+            <div className="mt-4 rounded-md border border-slate-200 p-3">
+              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-500">
+                Histórico de preço
+              </p>
+              <PriceSparkline points={history} currency={item.currency ?? 'BRL'} />
             </div>
           )}
           <form className="mt-4 flex flex-col gap-3" onSubmit={handleSubmit}>
