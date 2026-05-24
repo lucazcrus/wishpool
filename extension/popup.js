@@ -23474,7 +23474,59 @@ var import_jsx_runtime28 = __toESM(require_jsx_runtime(), 1);
 var CATEGORIES_KEY = "wishpoolCategories";
 var QUEUE_KEY = "wishpoolQueue";
 var SESSION_KEY = "wishpoolExtSession";
+var LINKS_INDEX_KEY = "wishpoolLinksIndex";
+var LINKS_INDEX_ALARM = "wishpool-links-index-refresh";
 var DEFAULT_CATEGORIES = ["Todos"];
+function normalizeIndexUrl(raw) {
+  try {
+    const u = new URL(raw);
+    u.hash = "";
+    const drop = /* @__PURE__ */ new Set([
+      "utm_source",
+      "utm_medium",
+      "utm_campaign",
+      "utm_term",
+      "utm_content",
+      "gclid",
+      "fbclid",
+      "mc_cid",
+      "mc_eid",
+      "_ga"
+    ]);
+    const next = new URLSearchParams();
+    for (const [k, v] of u.searchParams) {
+      if (!drop.has(k.toLowerCase())) next.set(k, v);
+    }
+    u.search = next.toString() ? `?${next.toString()}` : "";
+    return u.toString();
+  } catch {
+    return raw;
+  }
+}
+async function syncLinksIndex(session) {
+  if (!session?.accessToken) return;
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/links?select=id,url,currency,price`,
+      {
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${session.accessToken}`
+        }
+      }
+    );
+    if (!res.ok) return;
+    const rows = await res.json();
+    const index2 = {};
+    for (const row of rows) {
+      if (!row.url) continue;
+      const key = normalizeIndexUrl(row.url);
+      index2[key] = { itemId: row.id, currency: row.currency || "BRL", lastPrice: row.price };
+    }
+    await chrome.storage.local.set({ [LINKS_INDEX_KEY]: index2 });
+  } catch {
+  }
+}
 var CONFIGURED_APP_ORIGIN = "";
 var DEFAULT_APP_ORIGIN = "https://bagapp.io";
 var SUPABASE_URL = "https://okpxxpjskegpohowqqry.supabase.co";
@@ -23614,6 +23666,9 @@ function PopupApp() {
       );
       const nextSession = stored[SESSION_KEY] || null;
       setSession(nextSession);
+      if (nextSession?.accessToken) {
+        void syncLinksIndex(nextSession);
+      }
       const tab = await getActiveTab();
       if (cancelled) return;
       if (!tab?.url || !/^https?:\/\//i.test(tab.url)) {
@@ -23634,16 +23689,28 @@ function PopupApp() {
         );
       }
       if (changes[SESSION_KEY]) {
-        setSession(changes[SESSION_KEY].newValue || null);
+        const next = changes[SESSION_KEY].newValue || null;
+        setSession(next);
+        if (next?.accessToken) void syncLinksIndex(next);
       }
     };
     chrome.storage.onChanged.addListener(handleStorageChange);
     void bootstrap().catch(() => {
       setCaptureStatus({ message: "Falha ao inicializar extens\xE3o.", type: "error" });
     });
+    chrome.alarms.create(LINKS_INDEX_ALARM, { periodInMinutes: 60 });
+    const alarmListener = (alarm) => {
+      if (alarm.name !== LINKS_INDEX_ALARM) return;
+      void chrome.storage.local.get([SESSION_KEY]).then((stored) => {
+        const s = stored[SESSION_KEY];
+        if (s) void syncLinksIndex(s);
+      });
+    };
+    chrome.alarms.onAlarm.addListener(alarmListener);
     return () => {
       cancelled = true;
       chrome.storage.onChanged.removeListener(handleStorageChange);
+      chrome.alarms.onAlarm.removeListener(alarmListener);
     };
   }, []);
   const avatarInitial = (0, import_react7.useMemo)(() => {

@@ -27,7 +27,54 @@ import { CURRENCIES, DEFAULT_CURRENCY, flagClass, parseMaskedPrice } from '../sr
 const CATEGORIES_KEY = 'wishpoolCategories'
 const QUEUE_KEY = 'wishpoolQueue'
 const SESSION_KEY = 'wishpoolExtSession'
+const LINKS_INDEX_KEY = 'wishpoolLinksIndex'
+const LINKS_INDEX_ALARM = 'wishpool-links-index-refresh'
 const DEFAULT_CATEGORIES = ['Todos']
+
+function normalizeIndexUrl(raw) {
+  try {
+    const u = new URL(raw)
+    u.hash = ''
+    const drop = new Set([
+      'utm_source','utm_medium','utm_campaign','utm_term','utm_content',
+      'gclid','fbclid','mc_cid','mc_eid','_ga',
+    ])
+    const next = new URLSearchParams()
+    for (const [k, v] of u.searchParams) {
+      if (!drop.has(k.toLowerCase())) next.set(k, v)
+    }
+    u.search = next.toString() ? `?${next.toString()}` : ''
+    return u.toString()
+  } catch {
+    return raw
+  }
+}
+
+async function syncLinksIndex(session) {
+  if (!session?.accessToken) return
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/links?select=id,url,currency,price`,
+      {
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${session.accessToken}`,
+        },
+      },
+    )
+    if (!res.ok) return
+    const rows = await res.json()
+    const index = {}
+    for (const row of rows) {
+      if (!row.url) continue
+      const key = normalizeIndexUrl(row.url)
+      index[key] = { itemId: row.id, currency: row.currency || 'BRL', lastPrice: row.price }
+    }
+    await chrome.storage.local.set({ [LINKS_INDEX_KEY]: index })
+  } catch {
+    // swallow
+  }
+}
 
 const CONFIGURED_APP_ORIGIN = __WISHPOOL_APP_ORIGIN__
 const DEFAULT_APP_ORIGIN = 'https://bagapp.io'
@@ -202,7 +249,9 @@ function PopupApp() {
 
       const nextSession = stored[SESSION_KEY] || null
       setSession(nextSession)
-
+      if (nextSession?.accessToken) {
+        void syncLinksIndex(nextSession)
+      }
 
       const tab = await getActiveTab()
       if (cancelled) return
@@ -230,7 +279,9 @@ function PopupApp() {
       }
 
       if (changes[SESSION_KEY]) {
-        setSession(changes[SESSION_KEY].newValue || null)
+        const next = changes[SESSION_KEY].newValue || null
+        setSession(next)
+        if (next?.accessToken) void syncLinksIndex(next)
       }
     }
 
@@ -239,9 +290,20 @@ function PopupApp() {
       setCaptureStatus({ message: 'Falha ao inicializar extensão.', type: 'error' })
     })
 
+    chrome.alarms.create(LINKS_INDEX_ALARM, { periodInMinutes: 60 })
+    const alarmListener = (alarm) => {
+      if (alarm.name !== LINKS_INDEX_ALARM) return
+      void chrome.storage.local.get([SESSION_KEY]).then((stored) => {
+        const s = stored[SESSION_KEY]
+        if (s) void syncLinksIndex(s)
+      })
+    }
+    chrome.alarms.onAlarm.addListener(alarmListener)
+
     return () => {
       cancelled = true
       chrome.storage.onChanged.removeListener(handleStorageChange)
+      chrome.alarms.onAlarm.removeListener(alarmListener)
     }
   }, [])
 

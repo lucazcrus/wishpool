@@ -5,6 +5,51 @@ const APP_STATE_KEY_BASE = "wishpool:v1"
 const EXT_SESSION_KEY = "wishpoolExtSession"
 const SUPABASE_AUTH_STORAGE_KEY = "sb-okpxxpjskegpohowqqry-auth-token"
 const APP_QUEUE_SYNC_EVENT = "wishpool:extQueueUpdated"
+const LINKS_INDEX_KEY = 'wishpoolLinksIndex'
+const SUPABASE_REST_URL = 'https://okpxxpjskegpohowqqry.supabase.co/rest/v1'
+const SUPABASE_ANON_KEY_PUBLIC = 'sb_publishable_i_N5por1Imv5eL20Y7VwRw_stIIpGCa'
+
+function normalizeIndexUrl(raw) {
+  try {
+    const u = new URL(raw)
+    u.hash = ''
+    const drop = new Set([
+      'utm_source','utm_medium','utm_campaign','utm_term','utm_content',
+      'gclid','fbclid','mc_cid','mc_eid','_ga',
+    ])
+    const next = new URLSearchParams()
+    for (const [k, v] of u.searchParams) {
+      if (!drop.has(k.toLowerCase())) next.set(k, v)
+    }
+    u.search = next.toString() ? `?${next.toString()}` : ''
+    return u.toString()
+  } catch {
+    return raw
+  }
+}
+
+async function syncLinksIndexFromWeb(session) {
+  if (!session?.accessToken) return
+  try {
+    const res = await fetch(`${SUPABASE_REST_URL}/links?select=id,url,currency,price`, {
+      headers: {
+        apikey: SUPABASE_ANON_KEY_PUBLIC,
+        Authorization: `Bearer ${session.accessToken}`,
+      },
+    })
+    if (!res.ok) return
+    const rows = await res.json()
+    const index = {}
+    for (const row of rows) {
+      if (!row.url) continue
+      const key = normalizeIndexUrl(row.url)
+      index[key] = { itemId: row.id, currency: row.currency || 'BRL', lastPrice: row.price }
+    }
+    await chrome.storage.local.set({ [LINKS_INDEX_KEY]: index })
+  } catch {
+    // swallow
+  }
+}
 
 let activeUserId = null
 let lastSyncedCategories = ""
@@ -123,6 +168,7 @@ async function syncExtensionSessionFromSupabaseStorage() {
     })
     lastSessionToken = session.accessToken
     lastSyncedCategories = ""
+    void syncLinksIndexFromWeb(session)
   }
 
   return userId
